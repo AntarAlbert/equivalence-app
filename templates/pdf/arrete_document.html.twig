@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Arrêté {{ arrete.numeroArrete }}</title>
+    <style>
+        @page { margin: 2cm; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; }
+        .logo { text-align: center; margin-bottom: 20px; }
+        .logo img { max-width: 100px; }
+        .header { text-align: center; margin-bottom: 20px; font-weight: bold; }
+        .title { font-size: 14px; font-weight: bold; margin: 20px 0; text-align: center; }
+        .visa { margin: 5px 0; text-align: justify; }
+        .article { margin-top: 15px; text-align: justify; }
+        .signature { margin-top: 40px; text-align: right; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="logo">
+    <img src="file://{{ logoPath }}" alt="Logo">
+</div>
+<div class="header">
+    MINISTERE DU TRAVAIL, DE L’EMPLOI,<br>
+    DE LA FONCTION PUBLIQUE ET DES LOIS SOCIALES
+    <hr>
+</div>
+<div class="title">
+    <strong>Arrêté n° {{ arrete.numeroArrete }}</strong><br>
+    {{ arrete.titre }}<br>
+    Session du {{ arrete.dateArrete|date('d/m/Y') }}
+</div>
+<p><strong>LE PREMIER MINISTRE, CHEF DU GOUVERNEMENT,</strong></p>
+{% for considerant in arrete.considerants|sort((a,b)=> a.ordre <=> b.ordre) %}
+    <p class="visa">
+        Vu le/la {{ considerant.type }} {{ considerant.reference }}
+        {% if considerant.date %} du {{ considerant.date|date('d/m/Y') }}{% endif %}
+        portant {{ considerant.portant }};
+        {% if considerant.extrait %}<br><em>Extrait : {{ considerant.extrait }}</em>{% endif %}
+    </p>
+{% endfor %}
+<div class="title">ARRÊTE :</div>
+<p class="article">{{ arrete.articleDispositif|default('Est reconnue dans la Fonction Publique, en vue de recrutement dans la spécialité correspondante et dans le cadre et échelle ci-après, l’équivalence administrative du titre :') }}</p>
+<table>
+    <thead>
+        <tr>
+            <th>TITRE</th>
+            <th>ORGANISME ET PAYS</th>
+            <th>CLASSEMENT</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ arrete.equivalence.diplomeReference.titre|upper }}</td>
+            <td>{{ arrete.equivalence.diplomeReference.organisme|upper }}<br>{{ arrete.equivalence.diplomeReference.pays }}</td>
+            <td>{{ arrete.equivalence.classementComplet }}</td>
+        </tr>
+    </tbody>
+</table>
+<p class="article"><strong>Article 2.</strong> La présente équivalence administrative ne peut être considérée comme une équivalence académique.</p>
+<p class="article"><strong>Article 3.</strong> Toutes dispositions contraires au présent arrêté sont et demeurent abrogées.</p>
+<p class="article"><strong>Article 4.</strong> Le présent arrêté sera enregistré et publié au journal officiel de la République.</p>
+<div class="signature">
+    Fait à Antananarivo, le {{ "now"|date('d/m/Y') }}<br><br>
+    <strong>P. LE PREMIER MINISTRE,<br>CHEF DU GOUVERNEMENT</strong><br><br>
+    et par délégation<br><br>
+    <strong>LE MINISTRE DU TRAVAIL, DE L’EMPLOI,<br>DE LA FONCTION PUBLIQUE ET DES LOIS SOCIALES</strong>
+</div>
+</body>
+</html>

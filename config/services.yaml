@@ -1,0 +1,33 @@
+# config/services.yaml
+parameters:
+    documents_directory: "%kernel.project_dir%/public/uploads"
+    kernel.logs_dir: "%kernel.project_dir%/var/log"
+    admin_email: "system.info.return.28@gmail.com"
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\Controller\EquivalenceController:
+        bind:
+            $workflow: "@state_machine.equivalence_state_machine"
+
+    App\:
+        resource: "../src/"
+        exclude:
+            - "../src/DependencyInjection/"
+            - "../src/Entity/"
+            - "../src/Kernel.php"
+
+    # Voter pour les équivalences
+    App\Security\Voter\EquivalenceVoter:
+        tags: ["security.voter"]
+
+    App\Service\PdfGenerator:
+        arguments:
+            $kernelProjectDir: "%kernel.project_dir%"
+
+    App\Service\CodeSender:
+        arguments:
+            $adminEmail: "%admin_email%"

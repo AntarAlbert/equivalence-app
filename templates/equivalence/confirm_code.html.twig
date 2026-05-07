@@ -1,0 +1,110 @@
+{# templates/equivalence/confirm_code.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    <style>
+        .otp-input {
+            font-size: 1.5rem;
+            letter-spacing: 5px;
+            text-align: center;
+        }
+        .disabled { pointer-events: none; opacity: 0.5; }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>Confirmation requise</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p>Un code de confirmation a été envoyé à <strong>{{ app.user.email }}</strong>.</p>
+                    <p class="text-muted small">Code valable 15 minutes.</p>
+
+                    {{ form_start(form, {'attr': {'id': 'otp-form'}}) }}
+                        {{ form_widget(form.code, {
+                            'attr': {
+                                'class': 'form-control form-control-lg otp-input',
+                                'placeholder': '••••••',
+                                'autocomplete': 'off',
+                                'inputmode': 'numeric',
+                                'pattern': '[0-9]*',
+                                'maxlength': 6
+                            }
+                        }) }}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success btn-lg px-5">Valider le code</button>
+                        </div>
+                    {{ form_end(form) }}
+
+                    <hr class="my-4">
+
+                    <div>
+                        <a href="#" id="resend-link" class="btn btn-outline-secondary">Renvoyer le code</a>
+                        <span id="timer" class="ms-2 text-muted"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        (function() {
+            'use strict';
+
+            const resendLink = document.getElementById('resend-link');
+            const timerSpan = document.getElementById('timer');
+            let countdown = 60;
+            let interval = null;
+
+            function startCooldown() {
+                if (interval) clearInterval(interval);
+                resendLink.style.pointerEvents = 'none';
+                resendLink.classList.add('disabled');
+                interval = setInterval(() => {
+                    if (countdown <= 0) {
+                        clearInterval(interval);
+                        resendLink.style.pointerEvents = 'auto';
+                        resendLink.classList.remove('disabled');
+                        timerSpan.textContent = '';
+                        countdown = 60;
+                    } else {
+                        timerSpan.textContent = `(${countdown}s)`;
+                        countdown--;
+                    }
+                }, 1000);
+            }
+
+            resendLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch(this.href, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        _token: document.querySelector('input[name="_token"]').value
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'sent') {
+                        startCooldown();
+                        alert('Un nouveau code a été envoyé.');
+                    } else {
+                        alert(data.error || 'Erreur lors du renvoi');
+                    }
+                })
+                .catch(() => alert('Erreur réseau'));
+            });
+        })();
+    </script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des pays{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="bi bi-globe2"></i> Pays référentiels
+            </h1>
+            <p class="text-muted">Liste des pays utilisés pour les diplômes</p>
+        </div>
+        <a href="{{ path('admin_pays_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau pays
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Alpha-2</th>
+                            <th>Alpha-3</th>
+                            <th>Nom (français)</th>
+                            <th>Nom (anglais)</th>
+                            <th>Diplômes liés</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pays in pays %}
+                            <tr>
+                                <td>{{ pays.code }}</td>
+                                <td>{{ pays.alpha2 }}</td>
+                                <td>{{ pays.alpha3 }}</td>
+                                <td>{{ pays.nomFrFr }}</td>
+                                <td>{{ pays.nomEnGb }}</td>
+                                <td>{{ pays.diplomes|length }}</td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <a href="{{ path('admin_pays_show', { id: pays.id }) }}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ path('admin_pays_edit', { id: pays.id }) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post" action="{{ path('admin_pays_delete', { id: pays.id }) }}" style="display:inline-block"
+                                              onsubmit="return confirm('Supprimer définitivement ce pays ?')">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete_pays_' ~ pays.id) }}">
+                                            <button class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="text-center">Aucun pays enregistré</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

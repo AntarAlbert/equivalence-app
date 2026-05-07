@@ -1,0 +1,246 @@
+{# templates/pdf/arrete.html.twig #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+
+    {% set diplome = equivalence.diplomeReference %}
+    {% set pays = diplome and diplome.etablissement ? diplome.etablissement.pays : null %}
+
+    <title>Arrêté {{ equivalence.numeroDossier }}</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin-top: 1.2cm;
+            margin-bottom: 1.2cm;
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+        }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 11px;
+            line-height: 1.15;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        p { margin: 0; padding: 0; }
+        .bold { font-weight: bold; }
+        .underline { text-decoration: underline; }
+        .uppercase { text-transform: uppercase; }
+        .center { text-align: center; }
+        .justify { text-align: justify; }
+        .right { text-align: right; }
+        .mt-1 { margin-top: 4px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 18px; }
+
+        /* Nouveau style pour l'en-tête avec image */
+        .header-logo {
+            float: left;
+            width: 80px;
+            margin-right: 15px;
+        }
+        .header-logo img {
+            width: 100%;
+        }
+        .header-title {
+            overflow: hidden;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+            border: none;
+            padding: 0;
+        }
+        .header-left {
+            width: 42%;
+            font-size: 11px;
+            line-height: 1.15;
+        }
+        .header-right {
+            width: 58%;
+            font-size: 11px;
+            line-height: 1.15;
+            text-align: justify;
+            padding-left: 12px;
+        }
+
+        .prime-minister {
+            margin-top: 22px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .visa {
+            margin-top: 4px;
+            text-align: justify;
+        }
+
+        .arrete-title {
+            margin-top: 12px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .article {
+            margin-top: 7px;
+            text-align: justify;
+        }
+
+        .classification-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 6px;
+        }
+        .classification-table th,
+        .classification-table td {
+            border: 1px solid #000;
+            padding: 4px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+        .classification-table th {
+            text-align: center;
+            font-weight: bold;
+        }
+        .classification-table td {
+            text-align: center;
+        }
+
+        .signature {
+            margin-top: 18px;
+            width: 100%;
+        }
+        .signature-block {
+            width: 45%;
+            margin-left: auto;
+            text-align: center;
+            font-size: 10.5px;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+
+    {# ========== NOUVEL EN-TÊTE AVEC IMAGE ========== #}
+    <div class="clearfix">
+        <div class="header-logo">
+            {# Remplacez 'logo.png' par le chemin réel de votre image #}
+             <img src="file://{{ logoPath }}" alt="Logo" class="logo">
+        </div>
+        <div class="header-title">
+            <table class="header-table">
+                <tr>
+                    <td class="header-left">
+                        <p class="bold uppercase">MINISTERE DU TRAVAIL, DE L’EMPLOI,</p>
+                        <p class="bold uppercase">DE LA FONCTION PUBLIQUE ET DES LOIS SOCIALES</p>
+                        <p class="bold">----------------------</p>
+                    </td>
+                    <td class="header-right">
+                        <p>Arrêté n° <span class="bold">{{ equivalence.numeroDossier }}</span> – CNEAT portant détermination de l’équivalence administrative d’un titre dans la Fonction Publique</p>
+                        <p class="mt-1">Session ordinaire du {{ equivalence.createdAt|date('d/m/Y') }}</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    {# TITLE #}
+    <div class="prime-minister uppercase">LE PREMIER MINISTRE, CHEF DU GOUVERNEMENT,</div>
+
+    {# RECITALS #}
+    <p class="visa">Vu la Constitution ;</p>
+    <p class="visa">Vu la loi n° 2003-011 du 03 septembre 2003 portant Statut Général des Fonctionnaires, et les textes subséquents ;</p>
+    <p class="visa">Vu le décret n° 96-745 du 27 août 1996 portant classement hiérarchique des corps de fonctionnaires ;</p>
+    <p class="visa">Vu le décret n° 2005-074 du 01 février 2005 fixant les missions, la composition et les règles de fonctionnement de la Commission Nationale des Equivalences Administratives des Titres ;</p>
+    <p class="visa">Vu le décret n° 2019-1407 du 19 Juillet 2019 portant nomination du Premier Ministre, Chef du Gouvernement ;</p>
+    <p class="visa">Vu le décret n° 2022-197 du 10 Février 2022, modifiant et complétant certaines dispositions du Décret fixant les attributions du Ministre du Travail, de l’Emploi, de la Fonction Publique et des Lois Sociales ainsi que l’organisation générale de son Ministère ;</p>
+
+    {# ARRÊTÉ #}
+    <div class="arrete-title uppercase">ARRETE :</div>
+
+    {# ARTICLE 1 #}
+    <p class="article"><span class="bold underline">Article premier</span> : Est reconnue dans la Fonction Publique, en vue de recrutement dans la spécialité correspondante et dans le cadre et échelle ci-après, l’équivalence administrative du titre :</p>
+
+    {# TABLE #}
+    <table class="classification-table">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width:32%;">TITRE</th>
+                <th rowspan="2" style="width:33%;">ORGANISME ET PAYS DE DÉLIVRANCE</th>
+                <th colspan="2" style="width:35%;">CLASSEMENT</th>
+            </tr>
+            <tr>
+                <th>CADRE</th>
+                <th>ÉCHELLE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="2">
+                    {% if diplome and diplome.titre %}
+                        {{ diplome.titre|upper }}
+                    {% else %}
+                        NON RENSEIGNÉ
+                    {% endif %}
+                </td>
+                <td rowspan="2">
+                    {% if diplome and diplome.organisme %}
+                        {{ diplome.organisme|upper }}<br>
+                    {% else %}
+                        -<br>
+                    {% endif %}
+                    {% if pays and pays.nomFrFr %}
+                        {{ pays.nomFrFr|upper }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {{ equivalence.cadre|default('-') }}
+                </td>
+                <td>
+                    {{ equivalence.echelle|default('-') }}
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    {{ equivalence.classementComplet|default('-') }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# ARTICLES 2-4 #}
+    <p class="article"><span class="bold underline">Article 2</span> : La présente équivalence administrative ne peut être considérée comme une équivalence académique.</p>
+    <p class="article"><span class="bold underline">Article 3</span> : Toutes dispositions contraires au présent arrêté sont et demeurent abrogées.</p>
+    <p class="article"><span class="bold underline">Article 4</span> : Le présent arrêté sera enregistré et publié au journal officiel de la République.</p>
+
+    {# SIGNATURE #}
+    <div class="signature">
+        <div class="signature-block">
+            <p>Antananarivo, le {{ 'now'|date('d/m/Y') }}</p>
+            <div class="mt-4"></div>
+            <p class="bold uppercase">P. LE PREMIER MINISTRE,<br>CHEF DU GOUVERNEMENT</p>
+            <div class="mt-2"></div>
+            <p class="bold">et par délégation</p>
+            <div class="mt-2"></div>
+            <p class="bold uppercase">LE MINISTRE DU TRAVAIL, DE L’EMPLOI,<br>DE LA FONCTION PUBLIQUE<br>ET DES LOIS SOCIALES</p>
+        </div>
+    </div>
+</body>
+</html>

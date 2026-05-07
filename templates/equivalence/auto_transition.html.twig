@@ -1,0 +1,84 @@
+{# templates/equivalence/auto_transition.html.twig #}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Validation en cours...</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f8f9fa;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            margin:0;
+        }
+
+        .box{
+            background:white;
+            padding:40px;
+            border-radius:16px;
+            box-shadow:0 10px 30px rgba(0,0,0,.08);
+            text-align:center;
+            width:420px;
+        }
+
+        .spinner{
+            width:50px;
+            height:50px;
+            border:5px solid #dee2e6;
+            border-top-color:#0d6efd;
+            border-radius:50%;
+            margin:0 auto 20px auto;
+            animation:spin 1s linear infinite;
+        }
+
+        @keyframes spin{
+            to{
+                transform:rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+
+    <div class="spinner"></div>
+
+    <h3>Validation du dossier</h3>
+
+    <p>
+        Veuillez patienter pendant l’exécution de l’action...
+    </p>
+
+    <form
+        id="auto-transition-form"
+        method="post"
+        action="{{ path('equivalence_transition', {
+            id: equivalence.id,
+            transition: transition
+        }) }}"
+    >
+        <input
+            type="hidden"
+            name="_token"
+            value="{{ csrf_token('transition_' ~ equivalence.id) }}"
+        >
+    </form>
+
+</div>
+
+<script>
+    window.addEventListener('load', () => {
+        document
+            .getElementById('auto-transition-form')
+            .submit();
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+{# templates/equivalence/_form.html.twig #}
+
+{{ form_start(form, {
+    attr: {
+        novalidate: 'novalidate',
+        autocomplete: 'off',
+        class: 'needs-validation'
+    }
+}) }}
+
+{# ===================== ERREURS GLOBALES ===================== #}
+{% if form.vars.errors|length > 0 %}
+    <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">
+        <div class="fw-semibold mb-2">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Veuillez corriger les erreurs suivantes :
+        </div>
+        {{ form_errors(form) }}
+    </div>
+{% endif %}
+
+{# ===================== IDENTITÉ ===================== #}
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-2">
+            <i class="bi bi-person"></i>
+        </div>
+        <div>
+            <h3 class="h5 text-primary fw-bold mb-0">Identité du candidat</h3>
+            <small class="text-muted">Informations personnelles du demandeur</small>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form_row(form.nom, { attr: { class: 'form-control', placeholder: 'Nom du candidat', maxlength: 100, autocomplete: 'family-name' } }) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.prenom, { attr: { class: 'form-control', placeholder: 'Prénom du candidat', maxlength: 100, autocomplete: 'given-name' } }) }}
+        </div>
+    </div>
+</section>
+
+{# ===================== INFORMATIONS ===================== #}
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 me-2">
+            <i class="bi bi-envelope-paper"></i>
+        </div>
+        <div>
+            <h3 class="h5 text-info fw-bold mb-0">Informations complémentaires</h3>
+            <small class="text-muted">Coordonnées, nationalité, date de naissance</small>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form_row(form.email, { attr: { class: 'form-control', placeholder: 'adresse@email.com', autocomplete: 'email' } }) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.nationalite, { attr: { class: 'form-select' } }) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_row(form.dateNaissance, { attr: { class: 'form-control' } }) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_row(form.cni, { attr: { class: 'form-control', placeholder: '123 456 789 012', maxlength: 15, 'data-mask': 'cni' } }) }}
+        </div>
+    </div>
+
+    {# SECTION CNI #}
+    <div id="cin-detail-section" class="mt-4" style="display: none;">
+        <div class="bg-light rounded-4 p-4 border">
+            <div class="d-flex align-items-center mb-3">
+                <div class="bg-dark bg-opacity-10 text-dark rounded-circle p-2 me-2">
+                    <i class="bi bi-card-text"></i>
+                </div>
+                <h4 class="h6 fw-bold mb-0">Détails de la Carte Nationale d'Identité</h4>
+                <span class="text-muted small ms-2">(obligatoire pour les majeurs)</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    {{ form_row(form.cniDateDelivrance, { attr: { class: 'form-control' } }) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.cniLieuDelivrance, { attr: { class: 'form-control', placeholder: 'Lieu de délivrance' } }) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.cniDateDuplicata, { attr: { class: 'form-control' } }) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.cniLieuDuplicata, { attr: { class: 'form-control', placeholder: 'Lieu du duplicata' } }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ===================== DIPLÔME ===================== #}
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 me-2">
+            <i class="bi bi-mortarboard"></i>
+        </div>
+        <div>
+            <h3 class="h5 text-success fw-bold mb-0">Diplôme de référence</h3>
+            <small class="text-muted">Base de l’équivalence académique</small>
+        </div>
+    </div>
+    <div class="mb-4">
+        {{ form_row(form.diplomeReference, { attr: { class: 'form-select' } }) }}
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form_row(form.universite, { attr: { class: 'form-control bg-light', readonly: 'readonly' } }) }}
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.pays, { attr: { class: 'form-control bg-light', readonly: 'readonly' } }) }}
+        </div>
+    </div>
+</section>
+
+{# ===================== DOCUMENTS ===================== #}
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-2">
+            <i class="bi bi-file-earmark-arrow-up"></i>
+        </div>
+        <div>
+            <h3 class="h5 text-warning fw-bold mb-0">Documents obligatoires</h3>
+            <small class="text-muted">Téléversement sécurisé des pièces justificatives</small>
+        </div>
+    </div>
+    <div class="alert alert-light border rounded-4 small text-muted mb-4">
+        <ul class="mb-0 ps-3">
+            <li>Formats autorisés : PDF, JPG, PNG</li>
+            <li>Taille maximale recommandée : 6 Mo par document</li>
+            <li>Les documents doivent être lisibles et complets</li>
+        </ul>
+    </div>
+
+    {# ===================== EXISTANTS ===================== #}
+    {% if equivalence is defined and equivalence.documents|length > 0 %}
+        <div class="mb-4">
+            <h4 class="h6 fw-bold text-secondary mb-3">
+                <i class="bi bi-folder2-open me-2"></i> Documents actuellement enregistrés
+            </h4>
+            <div class="row g-3">
+                {% for document in equivalence.documents %}
+                    <div class="col-md-4">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <div>
+                                    <div class="fw-semibold small">
+                                        {% if document.type == 'DIPLOME' %}
+                                            <i class="bi bi-mortarboard text-primary me-1"></i> Diplôme
+                                        {% elseif document.type == 'RELEVE' %}
+                                            <i class="bi bi-journal-text text-success me-1"></i> Relevé de notes
+                                        {% elseif document.type == 'CIN' %}
+                                            <i class="bi bi-person-vcard text-warning me-1"></i> Pièce d'identité
+                                        {% endif %}
+                                    </div>
+                                    <div class="small text-muted text-break">{{ document.originalName }}</div>
+                                </div>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                <div><i class="bi bi-hdd me-1"></i> {{ document.readableSize }}</div>
+                                <div><i class="bi bi-calendar-event me-1"></i> {{ document.uploadedAt|date('d/m/Y H:i') }}</div>
+                            </div>
+                            <a href="{{ asset(document.path) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill w-100">
+                                <i class="bi bi-eye me-1"></i> Consulter
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    {# ===================== NOUVEAUX UPLOADS ===================== #}
+    <div class="row g-3">
+        <div class="col-md-4">
+            {{ form_row(form.diplomaFile, { attr: { class: 'form-control' } }) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_row(form.transcriptFile, { attr: { class: 'form-control' } }) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_row(form.identityFile, { attr: { class: 'form-control' } }) }}
+        </div>
+    </div>
+    <div class="alert alert-info border-0 rounded-4 mt-4 mb-0">
+        <div class="d-flex">
+            <div class="me-3"><i class="bi bi-info-circle-fill fs-5"></i></div>
+            <div class="small">
+                <strong>Mise à jour des documents :</strong><br>
+                Si vous téléversez un nouveau document, il remplacera automatiquement l'ancien document du même type.
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ===================== OBSERVATIONS (déplacé ici) ===================== #}
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-2 me-2">
+            <i class="bi bi-chat-left-text"></i>
+        </div>
+        <div>
+            <h3 class="h5 text-secondary fw-bold mb-0">Observations complémentaires</h3>
+            <small class="text-muted">Informations supplémentaires éventuelles</small>
+        </div>
+    </div>
+    {{ form_row(form.observation, {
+        attr: {
+            class: 'form-control',
+            rows: 4,
+            placeholder: 'Informations complémentaires éventuelles...'
+        }
+    }) }}
+</section>
+
+{# ===================== ACTIONS ===================== #}
+<div class="border-top pt-4 mt-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="small text-muted">
+            <i class="bi bi-shield-check me-1"></i>
+            Les informations enregistrées sont sécurisées et confidentielles.
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ cancel_path|default(path('equivalence_index')) }}" class="btn btn-light border rounded-pill px-4">
+                <i class="bi bi-x-circle me-1"></i> Annuler
+            </a>
+            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-check-circle me-1"></i> {{ button_label|default('Enregistrer le dossier') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+{{ form_end(form) }}

@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau pays{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="bi bi-plus-circle"></i> Nouveau pays
+            </h1>
+            <p class="text-muted">Ajouter un pays au référentiel</p>
+        </div>
+        <a href="{{ path('admin_pays_index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Annuler
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations du pays</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    {{ form_row(form.code, { label_attr: { class: 'form-label fw-semibold' } }) }}
+                </div>
+                <div class="col-md-3">
+                    {{ form_row(form.alpha2, { label_attr: { class: 'form-label fw-semibold' }, attr: { placeholder: 'FR' } }) }}
+                </div>
+                <div class="col-md-3">
+                    {{ form_row(form.alpha3, { label_attr: { class: 'form-label fw-semibold' }, attr: { placeholder: 'FRA' } }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.nomFrFr, { label_attr: { class: 'form-label fw-semibold' }, attr: { placeholder: 'France' } }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.nomEnGb, { label_attr: { class: 'form-label fw-semibold' }, attr: { placeholder: 'France' } }) }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <a href="{{ path('admin_pays_index') }}" class="btn btn-light border">
+                    <i class="bi bi-x-circle"></i> Annuler
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-save"></i> Enregistrer
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

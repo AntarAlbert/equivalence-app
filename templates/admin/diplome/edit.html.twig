@@ -1,0 +1,263 @@
+{# templates/admin/diplome/edit.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Modifier le diplôme - {{ diplome.titre|e }}
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    {# =========================================================
+       HEADER
+    ========================================================== #}
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-1">
+                <i class="bi bi-pencil-square me-2"></i>
+                Modifier le diplôme
+            </h1>
+
+            <p class="text-muted mb-0">
+                Mise à jour des informations du référentiel académique
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{{ path('admin_diplome_show', { id: diplome.id }) }}"
+               class="btn btn-outline-info rounded-pill px-4">
+
+                <i class="bi bi-eye me-1"></i>
+                Consulter
+
+            </a>
+
+            <a href="{{ path('admin_diplome_index') }}"
+               class="btn btn-outline-secondary rounded-pill px-4">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Retour
+
+            </a>
+
+        </div>
+
+    </div>
+
+    {# =========================================================
+       FORMULAIRE
+    ========================================================== #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+        <div class="card-header bg-light py-3">
+
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-info-circle me-2 text-primary"></i>
+                Informations du diplôme
+            </h5>
+
+        </div>
+
+        <div class="card-body p-4">
+
+            {{ form_start(form, {
+                attr: {
+                    novalidate: 'novalidate',
+                    autocomplete: 'off'
+                }
+            }) }}
+
+            {# =====================================================
+               ERREURS GLOBALES
+            ====================================================== #}
+            {% if form.vars.errors|length > 0 %}
+                <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">
+
+                    <div class="fw-semibold mb-2">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Certaines informations sont invalides
+                    </div>
+
+                    {{ form_errors(form) }}
+
+                </div>
+            {% endif %}
+
+            <div class="row g-4">
+
+                {# =================================================
+                   TITRE
+                ================================================== #}
+                <div class="col-lg-6">
+
+                    <div class="card border-0 bg-light-subtle h-100 rounded-4">
+
+                        <div class="card-body">
+
+                            {{ form_label(form.titre, null, {
+                                label_attr: {
+                                    class: 'form-label fw-semibold'
+                                }
+                            }) }}
+
+                            {{ form_widget(form.titre, {
+                                attr: {
+                                    class: 'form-control form-control-lg',
+                                    placeholder: 'Ex : Master en Informatique'
+                                }
+                            }) }}
+
+                            <div class="form-text">
+                                Intitulé officiel du diplôme.
+                            </div>
+
+                            {{ form_errors(form.titre) }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {# =================================================
+                   ETABLISSEMENT
+                ================================================== #}
+                <div class="col-lg-6">
+
+                    <div class="card border-0 bg-light-subtle h-100 rounded-4">
+
+                        <div class="card-body">
+
+                            {{ form_label(form.etablissement, null, {
+                                label_attr: {
+                                    class: 'form-label fw-semibold'
+                                }
+                            }) }}
+
+                            {{ form_widget(form.etablissement, {
+                                attr: {
+                                    class: 'form-select'
+                                }
+                            }) }}
+
+                            <div class="form-text">
+                                Le pays et les informations académiques sont déduits automatiquement de l’établissement sélectionné.
+                            </div>
+
+                            {{ form_errors(form.etablissement) }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {# =================================================
+                   ORGANISME HISTORIQUE
+                ================================================== #}
+                <div class="col-12">
+
+                    <div class="card border-0 bg-light-subtle rounded-4">
+
+                        <div class="card-body">
+
+                            {{ form_label(form.organisme, null, {
+                                label_attr: {
+                                    class: 'form-label fw-semibold'
+                                }
+                            }) }}
+
+                            {{ form_widget(form.organisme, {
+                                attr: {
+                                    class: 'form-control',
+                                    placeholder: 'Ex : Ancienne université ou organisme historique'
+                                }
+                            }) }}
+
+                            <div class="form-text">
+                                Optionnel. Permet de conserver l’historique ou l’ancienne dénomination de l’organisme.
+                            </div>
+
+                            {{ form_errors(form.organisme) }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {# =====================================================
+               INFORMATIONS COMPLEMENTAIRES
+            ====================================================== #}
+            <div class="alert alert-light border rounded-4 mt-4 mb-0">
+
+                <div class="d-flex align-items-start">
+
+                    <div class="me-3">
+                        <i class="bi bi-shield-check fs-3 text-primary"></i>
+                    </div>
+
+                    <div>
+
+                        <h6 class="fw-bold mb-2">
+                            Gestion des règles d’équivalence
+                        </h6>
+
+                        <p class="text-muted mb-3">
+                            Les informations de classement académique
+                            (cadre, échelle, catégorie et bonification)
+                            sont désormais historisées dans les
+                            <strong>règles d’équivalence</strong>
+                            associées à ce diplôme.
+                        </p>
+
+                        <a href="{{ path('admin_diplome_show', { id: diplome.id }) }}"
+                           class="btn btn-sm btn-outline-primary rounded-pill">
+
+                            <i class="bi bi-calendar-range me-1"></i>
+                            Voir l’historique des règles
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {# =====================================================
+               ACTIONS
+            ====================================================== #}
+            <div class="d-flex flex-column flex-md-row justify-content-end gap-2 mt-4 pt-4 border-top">
+
+                <a href="{{ path('admin_diplome_index') }}"
+                   class="btn btn-light border rounded-pill px-4">
+
+                    <i class="bi bi-x-circle me-1"></i>
+                    Annuler
+
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary rounded-pill px-5">
+
+                    <i class="bi bi-save me-1"></i>
+                    Mettre à jour
+
+                </button>
+
+            </div>
+
+            {{ form_end(form) }}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

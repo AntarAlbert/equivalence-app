@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes diplômes proposés{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Diplômes proposés par mon établissement</h1>
+    <a href="{{ path('etablissement_diplome_new') }}" class="btn btn-primary mb-3">Proposer un nouveau diplôme</a>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Établissement</th>
+                <th>Statut validation</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for diplome in diplomes %}
+                <tr>
+                    <td>{{ diplome.titre }}</td>
+                    <td>{{ diplome.etablissement ? diplome.etablissement.nom : '—' }}</td>
+                    <td>
+                        {% if diplome.validationStatus == 'pending' %}
+                            <span class="badge bg-warning">En attente</span>
+                        {% elseif diplome.validationStatus == 'approved' %}
+                            <span class="badge bg-success">Approuvé</span>
+                        {% else %}
+                            <span class="badge bg-danger">Rejeté</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if diplome.validationStatus == 'pending' %}
+                            <a href="{{ path('etablissement_diplome_edit', {id: diplome.id}) }}" class="btn btn-sm btn-warning">Modifier</a>
+                        {% endif %}
+                        <a href="{{ path('etablissement_diplome_show', {id: diplome.id}) }}" class="btn btn-sm btn-info">Voir</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-center">Aucun diplôme proposé.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

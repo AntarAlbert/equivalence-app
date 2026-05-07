@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Validation des diplômes{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Diplômes en attente de validation</h1>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Établissement</th>
+                <th>Proposé par</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for diplome in pending %}
+                <tr>
+                    <td>{{ diplome.titre }}</td>
+                    <td>{{ diplome.etablissementSource ? diplome.etablissementSource.nom : '—' }}</td>
+                    <td>{{ diplome.proposedBy.email }}</td>
+                    <td>
+                        <form method="post" action="{{ path('commission_diplome_approve', {id: diplome.id}) }}" style="display:inline-block">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approve_diplome_' ~ diplome.id) }}">
+                            <button class="btn btn-sm btn-success">Approuver</button>
+                        </form>
+                        <form method="post" action="{{ path('commission_diplome_reject', {id: diplome.id}) }}" style="display:inline-block">
+                            <input type="hidden" name="_token" value="{{ csrf_token('reject_diplome_' ~ diplome.id) }}">
+                            <button class="btn btn-sm btn-danger">Rejeter</button>
+                        </form>
+                        <a href="{{ path('commission_regle_new', {id: diplome.id}) }}" class="btn btn-sm btn-info">Créer règle</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-center">Aucun diplôme en attente.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,344 @@
+{# templates/components/_menu.html.twig #}
+
+<nav
+    class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm"
+>
+
+    <div class="container-fluid">
+
+        {# LOGO / TITRE #}
+        <a
+            class="navbar-brand fw-bold"
+            href="{{ path('equivalence_index') }}"
+        >
+
+            <i class="bi bi-mortarboard-fill"></i>
+
+            Equivalence SI
+
+        </a>
+
+        {# MOBILE BUTTON #}
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNavbar"
+        >
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+
+        <div
+            class="collapse navbar-collapse"
+            id="mainNavbar"
+        >
+
+            {# MENU PRINCIPAL #}
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                {# ====================================================== #}
+                {# DASHBOARD #}
+                {# ====================================================== #}
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link
+                        {% if app.request.attributes.get('_route')
+                            starts with 'dashboard'
+                        %}
+                            active
+                        {% endif %}
+                        "
+                        href="{{ path('equivalence_index') }}"
+                    >
+
+                        <i class="bi bi-speedometer2"></i>
+
+                        Tableau de bord
+
+                    </a>
+
+                </li>
+
+                {# ====================================================== #}
+                {# DOSSIERS #}
+                {# ====================================================== #}
+
+                {% if is_granted('ROLE_AGENT') %}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                        >
+
+                            <i class="bi bi-folder2-open"></i>
+
+                            Dossiers
+
+                        </a>
+
+                        <ul class="dropdown-menu shadow border-0">
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('equivalence_index') }}"
+                                >
+
+                                    <i class="bi bi-list-ul"></i>
+
+                                    Liste des dossiers
+
+                                </a>
+
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('equivalence_new') }}"
+                                >
+
+                                    <i class="bi bi-plus-circle"></i>
+
+                                    Nouveau dossier
+
+                                </a>
+
+                            </li>
+
+                        </ul>
+
+                    </li>
+
+                {% endif %}
+
+                {# ====================================================== #}
+                {# COMMISSION #}
+                {# ====================================================== #}
+
+                {% if is_granted('ROLE_COMMISSION') %}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                        >
+
+                            <i class="bi bi-people"></i>
+
+                            Commission
+
+                        </a>
+
+                        <ul class="dropdown-menu shadow border-0">
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('commission_dashboard') }}"
+                                >
+
+                                    <i class="bi bi-kanban"></i>
+
+                                    Tableau commission
+
+                                </a>
+
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('equivalence_index') }}"
+                                >
+
+                                    <i class="bi bi-check2-square"></i>
+
+                                    Validation dossiers
+
+                                </a>
+
+                            </li>
+
+                        </ul>
+
+                    </li>
+
+                {% endif %}
+
+                {# ====================================================== #}
+                {# ADMIN #}
+                {# ====================================================== #}
+
+                {% if is_granted('ROLE_ADMIN') %}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                        >
+
+                            <i class="bi bi-shield-lock"></i>
+
+                            Administration
+
+                        </a>
+
+                        <ul class="dropdown-menu shadow border-0">
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('admin_dashboard') }}"
+                                >
+
+                                    <i class="bi bi-speedometer"></i>
+
+                                    Dashboard admin
+
+                                </a>
+
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('admin_users') }}"
+                                >
+
+                                    <i class="bi bi-people-fill"></i>
+
+                                    Utilisateurs
+
+                                </a>
+
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('admin_logs') }}"
+                                >
+
+                                    <i class="bi bi-clock-history"></i>
+
+                                    Journal système
+
+                                </a>
+
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ path('admin_statistics') }}"
+                                >
+
+                                    <i class="bi bi-bar-chart"></i>
+
+                                    Statistiques
+
+                                </a>
+
+                            </li>
+
+                        </ul>
+
+                    </li>
+
+                {% endif %}
+
+            </ul>
+
+            {# ====================================================== #}
+            {# USER MENU #}
+            {# ====================================================== #}
+
+            <ul class="navbar-nav ms-auto">
+
+                {% if app.user %}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                        >
+
+                            <i class="bi bi-person-circle"></i>
+
+                            {{ app.user.email }}
+
+                        </a>
+
+                        <ul
+                            class="dropdown-menu dropdown-menu-end shadow border-0"
+                        >
+
+                            <li>
+
+                                <span class="dropdown-item-text small text-muted">
+
+                                    Rôles :
+                                    {{ app.user.roles|join(', ') }}
+
+                                </span>
+
+                            </li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item text-danger"
+                                    href="{{ path('app_logout') }}"
+                                >
+
+                                    <i class="bi bi-box-arrow-right"></i>
+
+                                    Déconnexion
+
+                                </a>
+
+                            </li>
+
+                        </ul>
+
+                    </li>
+
+                {% endif %}
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</nav>

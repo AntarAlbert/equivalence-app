@@ -1,0 +1,24 @@
+framework:
+    workflows:
+        equivalence_state_machine:
+            type: state_machine
+            marking_store:
+                type: method
+                property: status
+            supports: [App\Entity\Equivalence]
+            initial_marking: draft
+            places:
+                - draft
+                - submitted
+                - in_review
+                - in_committee
+                - approved
+                - rejected
+            transitions:
+                submit: { from: draft, to: submitted }
+                start_review: { from: submitted, to: in_review }
+                send_to_committee: { from: in_review, to: in_committee }
+                approve: { from: in_committee, to: approved }
+                reject:
+                    { from: [submitted, in_review, in_committee], to: rejected }
+                ask_modification: { from: [in_review, in_committee], to: draft }

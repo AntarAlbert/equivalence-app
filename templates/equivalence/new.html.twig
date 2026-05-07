@@ -1,0 +1,189 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Nouveau dossier d'équivalence
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    {# ===================== ENTÊTE ===================== #}
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-1">
+                <i class="bi bi-folder-plus me-2"></i>
+                Nouveau dossier d'équivalence
+            </h1>
+
+            <p class="text-muted mb-0">
+                Création sécurisée d'une demande d’équivalence académique.
+            </p>
+        </div>
+
+        <div>
+            <a href="{{ path('equivalence_index') }}"
+               class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left-circle me-1"></i>
+                Retour à la liste
+            </a>
+        </div>
+
+    </div>
+
+    {# ===================== FORMULAIRE ===================== #}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <div class="card-header bg-primary text-white py-3">
+            <h2 class="h5 mb-0">
+                <i class="bi bi-person-vcard me-2"></i>
+                Informations du dossier
+            </h2>
+        </div>
+
+        <div class="card-body p-4">
+
+            {{ include('equivalence/_form.html.twig', {
+                button_label: 'Enregistrer le dossier',
+                cancel_path: path('equivalence_index')
+            }) }}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // =====================================================
+    // HYDRATATION UNIVERSITÉ / PAYS
+    // =====================================================
+
+    const diplomaSelect = document.getElementById('equivalence_diplomeReference');
+    const universiteField = document.getElementById('equivalence_universite');
+    const paysField = document.getElementById('equivalence_pays');
+
+    if (diplomaSelect && universiteField && paysField) {
+
+        const updateFields = () => {
+
+            const selectedOption =
+                diplomaSelect.options[diplomaSelect.selectedIndex];
+
+            universiteField.value =
+                selectedOption?.dataset.organisme || '';
+
+            paysField.value =
+                selectedOption?.dataset.pays || '';
+        };
+
+        diplomaSelect.addEventListener('change', updateFields);
+
+        updateFields();
+    }
+
+    // =====================================================
+    // MASQUE CNI
+    // =====================================================
+
+    const cniInput =
+        document.querySelector('[data-mask="cni"]');
+
+    if (cniInput) {
+
+        const formatCni = (value) => {
+
+            let cleaned =
+                value.replace(/\D/g, '').substring(0, 12);
+
+            return cleaned.replace(/(\d{3})(?=\d)/g, '$1 ');
+        };
+
+        cniInput.addEventListener('input', (e) => {
+            e.target.value = formatCni(e.target.value);
+        });
+
+        cniInput.value = formatCni(cniInput.value);
+
+        const form = cniInput.closest('form');
+
+        if (form) {
+
+            form.addEventListener('submit', () => {
+                cniInput.value =
+                    cniInput.value.replace(/\s+/g, '');
+            });
+
+        }
+    }
+
+    // =====================================================
+    // SECTION CNI MAJEUR
+    // =====================================================
+
+    const birthdateInput =
+        document.getElementById('equivalence_dateNaissance');
+
+    const cinDetailSection =
+        document.getElementById('cin-detail-section');
+
+    function calculateAge(birthDate) {
+
+        const today = new Date();
+
+        let age =
+            today.getFullYear() - birthDate.getFullYear();
+
+        const m =
+            today.getMonth() - birthDate.getMonth();
+
+        if (
+            m < 0 ||
+            (m === 0 &&
+            today.getDate() < birthDate.getDate())
+        ) {
+            age--;
+        }
+
+        return age;
+    }
+
+    function toggleDetailSection() {
+
+        if (!cinDetailSection) return;
+
+        if (birthdateInput && birthdateInput.value) {
+
+            const birthDate =
+                new Date(birthdateInput.value);
+
+            const age = calculateAge(birthDate);
+
+            cinDetailSection.style.display =
+                age >= 18 ? 'block' : 'none';
+
+        } else {
+
+            cinDetailSection.style.display = 'none';
+        }
+    }
+
+    if (birthdateInput) {
+
+        birthdateInput.addEventListener(
+            'change',
+            toggleDetailSection
+        );
+
+        toggleDetailSection();
+    }
+
+});
+</script>
+{% endblock %}

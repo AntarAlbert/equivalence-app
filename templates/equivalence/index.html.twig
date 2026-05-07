@@ -1,0 +1,401 @@
+{# templates/equivalence/index.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Dossiers d'équivalence
+{% endblock %}
+
+{% block body %}
+
+{% set statusBadge = {
+    'draft': 'secondary',
+    'submitted': 'primary',
+    'in_review': 'warning',
+    'in_committee': 'info',
+    'approved': 'success',
+    'rejected': 'danger'
+} %}
+
+{% set statusLabel = {
+    'draft': 'Brouillon',
+    'submitted': 'Soumis',
+    'in_review': 'En analyse',
+    'in_committee': 'En comité',
+    'approved': 'Approuvé',
+    'rejected': 'Rejeté'
+} %}
+
+<div class="container-fluid py-4">
+
+    {# ===================== HEADER ===================== #}
+
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+
+        <div>
+            <h1 class="h2 fw-bold text-primary mb-1">
+                <i class="bi bi-folder2-open me-2"></i>
+                Dossiers d'équivalence
+            </h1>
+
+            <p class="text-muted mb-0">
+                Gestion centralisée des demandes d'équivalence académique.
+            </p>
+        </div>
+
+        <div>
+            <a href="{{ path('equivalence_new') }}"
+               class="btn btn-primary rounded-pill px-4">
+
+                <i class="bi bi-plus-circle me-1"></i>
+                Nouveau dossier
+
+            </a>
+        </div>
+
+    </div>
+
+    {# ===================== FILTRES ===================== #}
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+        <div class="card-body p-4">
+
+            <form method="get"
+                  action="{{ path('equivalence_index') }}">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-lg-6">
+
+                        <label class="form-label fw-semibold small text-secondary">
+                            <i class="bi bi-search me-1"></i>
+                            Recherche
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+
+                            <input
+                                type="text"
+                                name="search"
+                                class="form-control border-start-0"
+                                value="{{ search|default('') }}"
+                                placeholder="N° dossier, nom, diplôme, établissement..."
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-3">
+
+                        <label class="form-label fw-semibold small text-secondary">
+                            <i class="bi bi-funnel me-1"></i>
+                            Statut
+                        </label>
+
+                        <select
+                            name="status"
+                            class="form-select">
+
+                            <option value="">
+                                Tous les statuts
+                            </option>
+
+                            {% for key, label in statusLabel %}
+
+                                <option
+                                    value="{{ key }}"
+                                    {{ currentStatus|default('') == key ? 'selected' }}>
+
+                                    {{ label }}
+
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-lg-3">
+
+                        <div class="d-flex gap-2">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary w-100">
+
+                                <i class="bi bi-filter-circle me-1"></i>
+                                Filtrer
+
+                            </button>
+
+                            <a
+                                href="{{ path('equivalence_index') }}"
+                                class="btn btn-outline-secondary w-100">
+
+                                <i class="bi bi-arrow-repeat"></i>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {# ===================== TABLE ===================== #}
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <div class="card-header bg-white border-0 py-3 px-4">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h2 class="h5 fw-bold mb-1">
+
+                        <i class="bi bi-list-ul text-primary me-2"></i>
+                        Liste des dossiers
+
+                    </h2>
+
+                    <small class="text-muted">
+                        Consultation et suivi des demandes.
+                    </small>
+
+                </div>
+
+                <div class="small text-muted">
+
+                    <i class="bi bi-collection me-1"></i>
+
+                    {{ items.getTotalItemCount }}
+
+                    dossier(s)
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th class="ps-4">N° dossier</th>
+
+                        <th>Candidat</th>
+
+                        <th>Diplôme</th>
+
+                        <th>Établissement</th>
+
+                        <th>Pays</th>
+
+                        <th>Statut</th>
+
+                        <th class="text-end pe-4">Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                {% for item in items %}
+
+                    {% set diplome = item.diplomeReference %}
+
+                    <tr>
+
+                        <td class="ps-4">
+
+                            <div class="fw-semibold text-primary">
+                                {{ item.numeroDossier }}
+                            </div>
+
+                            <small class="text-muted">
+                                {{ item.createdAt|date('d/m/Y H:i') }}
+                            </small>
+
+                        </td>
+
+                        <td>
+
+                            <div class="fw-semibold">
+                                {{ item.nom }}
+                                {{ item.prenom }}
+                            </div>
+
+                            <small class="text-muted">
+                                {{ item.email ?: '—' }}
+                            </small>
+
+                        </td>
+
+                        <td>
+
+                            {% if diplome %}
+
+                                <div class="fw-medium">
+                                    {{ diplome.titre }}
+                                </div>
+
+                            {% else %}
+
+                                <span class="text-muted">—</span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if diplome and diplome.etablissement %}
+
+                                {{ diplome.etablissement.nom }}
+
+                            {% else %}
+
+                                <span class="text-muted">—</span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if diplome and diplome.etablissement and diplome.etablissement.pays %}
+
+                                {{ diplome.etablissement.pays.nomFrFr }}
+
+                            {% else %}
+
+                                <span class="text-muted">—</span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge rounded-pill bg-{{ statusBadge[item.status]|default('secondary') }}">
+
+                                {{ statusLabel[item.status]|default(item.status) }}
+
+                            </span>
+
+                        </td>
+
+                        <td class="text-end pe-4">
+
+                            <div class="btn-group">
+
+                                <a
+                                    href="{{ path('equivalence_show', { id: item.id }) }}"
+                                    class="btn btn-sm btn-outline-primary"
+                                    title="Consulter">
+
+                                    <i class="bi bi-eye"></i>
+
+                                </a>
+
+                                {% if item.status in ['draft', 'submitted'] %}
+
+                                    <a
+                                        href="{{ path('equivalence_edit', { id: item.id }) }}"
+                                        class="btn btn-sm btn-outline-warning"
+                                        title="Modifier">
+
+                                        <i class="bi bi-pencil-square"></i>
+
+                                    </a>
+
+                                {% endif %}
+
+                                <a
+                                    href="{{ path('equivalence_pdf', { id: item.id }) }}"
+                                    class="btn btn-sm btn-outline-success"
+                                    title="PDF">
+
+                                    <i class="bi bi-file-earmark-pdf"></i>
+
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="7" class="text-center py-5">
+
+                            <div class="text-muted">
+
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+
+                                <div class="fw-semibold mb-1">
+                                    Aucun dossier trouvé
+                                </div>
+
+                                <small>
+                                    Aucun résultat correspondant aux critères.
+                                </small>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {# ===================== PAGINATION ===================== #}
+
+        {% if items.getPaginationData is defined %}
+
+            <div class="card-footer bg-white border-0 py-3">
+
+                <div class="d-flex justify-content-center">
+
+                    {{ knp_pagination_render(items) }}
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Listes des diplômés{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Diplômés enregistrés par mon établissement</h1>
+    <a href="{{ path('etablissement_diplome_obtenu_new') }}" class="btn btn-primary mb-3">Ajouter un diplômé</a>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Diplôme</th>
+                <th>Année obtention</th>
+                <th>CNI</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obtenu in diplomeObtenus %}
+                <tr>
+                    <td>{{ obtenu.nom }}</td>
+                    <td>{{ obtenu.prenom }}</td>
+                    <td>{{ obtenu.diplome.titre }}</td>
+                    <td>{{ obtenu.anneeObtention }}</td>
+                    <td>{{ obtenu.numeroCni }}</td>
+                    <td>
+                        <a href="{{ path('etablissement_diplome_obtenu_delete', {id: obtenu.id}) }}" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer ?')">Supprimer</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="text-center">Aucun diplômé enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

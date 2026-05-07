@@ -1,0 +1,422 @@
+{# templates/admin/regle_equivalence/form.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {{ regle is defined and regle ? 'Modifier' : 'Nouvelle' }} règle d’équivalence
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    {# =========================================================
+       CONFIGURATION
+    ========================================================== #}
+    {% set isEdit = regle is defined and regle %}
+    {% set diplome = form.diplome.vars.data ?? null %}
+
+    {# =========================================================
+       HEADER
+    ========================================================== #}
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+
+        <div>
+
+            <h1 class="h3 fw-bold text-primary mb-1">
+
+                <i class="bi {{ isEdit ? 'bi-pencil-square' : 'bi-plus-circle-fill' }} me-2"></i>
+
+                {{ isEdit ? 'Modifier la règle d’équivalence' : 'Nouvelle règle d’équivalence' }}
+
+            </h1>
+
+            <p class="text-muted mb-0">
+                Gestion des classements, cadres, échelles et périodes d’équivalence.
+            </p>
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{{ path('admin_regle_equivalence_index') }}"
+               class="btn btn-outline-secondary rounded-pill px-4">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Retour
+
+            </a>
+
+        </div>
+
+    </div>
+
+    {# =========================================================
+       CONTENU PRINCIPAL
+    ========================================================== #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+        {# HEADER CARTE #}
+        <div class="card-header bg-light border-0 py-3">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+
+                <div>
+
+                    <h2 class="h5 fw-bold mb-1">
+
+                        <i class="bi bi-diagram-3 me-2 text-primary"></i>
+
+                        {{ isEdit ? 'Modification de la règle' : 'Création d’une règle' }}
+
+                    </h2>
+
+                    <div class="small text-muted">
+
+                        {% if diplome %}
+                            Diplôme concerné :
+                            <strong>{{ diplome.titre|e }}</strong>
+                        {% else %}
+                            Sélectionnez le diplôme et les paramètres d’équivalence.
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% if isEdit and regle.id %}
+                    <span class="badge bg-primary-subtle text-primary border px-3 py-2">
+
+                        <i class="bi bi-hash me-1"></i>
+                        ID : {{ regle.id }}
+
+                    </span>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {# BODY #}
+        <div class="card-body p-4">
+
+            {# MESSAGE INFORMATION #}
+            <div class="alert alert-light border d-flex align-items-start mb-4">
+
+                <i class="bi bi-shield-check fs-5 text-success me-3"></i>
+
+                <div>
+
+                    <div class="fw-semibold mb-1">
+                        Validation et cohérence
+                    </div>
+
+                    <div class="small text-muted">
+                        Vérifiez les périodes, le classement et le statut actif
+                        avant enregistrement afin d’éviter les conflits
+                        d’équivalence.
+                    </div>
+
+                </div>
+
+            </div>
+
+            {# =====================================================
+               FORMULAIRE
+            ====================================================== #}
+            {{ form_start(form, {
+                attr: {
+                    novalidate: 'novalidate',
+                    autocomplete: 'off'
+                }
+            }) }}
+
+            <div class="row g-4">
+
+                {# DIPLOME #}
+                {% if form.diplome is defined %}
+                    <div class="col-md-6">
+
+                        {{ form_label(form.diplome, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.diplome, {
+                            attr: {
+                                class: 'form-select'
+                            }
+                        }) }}
+
+                        {{ form_errors(form.diplome) }}
+
+                    </div>
+                {% endif %}
+
+                {# CADRE #}
+                {% if form.cadre is defined %}
+                    <div class="col-md-3">
+
+                        {{ form_label(form.cadre, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.cadre, {
+                            attr: {
+                                class: 'form-select'
+                            }
+                        }) }}
+
+                        {{ form_errors(form.cadre) }}
+
+                    </div>
+                {% endif %}
+
+                {# ECHELLE #}
+                {% if form.echelle is defined %}
+                    <div class="col-md-3">
+
+                        {{ form_label(form.echelle, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.echelle, {
+                            attr: {
+                                class: 'form-select'
+                            }
+                        }) }}
+
+                        {{ form_errors(form.echelle) }}
+
+                    </div>
+                {% endif %}
+
+                {# CATEGORIE #}
+                {% if form.categorie is defined %}
+                    <div class="col-md-4">
+
+                        {{ form_label(form.categorie, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.categorie, {
+                            attr: {
+                                class: 'form-control',
+                                placeholder: 'Ex : VII'
+                            }
+                        }) }}
+
+                        {{ form_errors(form.categorie) }}
+
+                    </div>
+                {% endif %}
+
+                {# BONIFICATION #}
+                {% if form.bonification is defined %}
+                    <div class="col-md-4">
+
+                        {{ form_label(form.bonification, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.bonification, {
+                            attr: {
+                                class: 'form-control',
+                                min: 0
+                            }
+                        }) }}
+
+                        {{ form_errors(form.bonification) }}
+
+                    </div>
+                {% endif %}
+
+                {# ACTIF #}
+                {% if form.actif is defined %}
+                    <div class="col-md-4 d-flex align-items-end">
+
+                        <div class="form-check form-switch border rounded-3 px-4 py-3 w-100 bg-light">
+
+                            {{ form_widget(form.actif, {
+                                attr: {
+                                    class: 'form-check-input'
+                                }
+                            }) }}
+
+                            {{ form_label(form.actif, null, {
+                                label_attr: {
+                                    class: 'form-check-label fw-semibold ms-2'
+                                }
+                            }) }}
+
+                            {{ form_errors(form.actif) }}
+
+                        </div>
+
+                    </div>
+                {% endif %}
+
+                {# DATE DEBUT #}
+                {% if form.dateDebut is defined %}
+                    <div class="col-md-6">
+
+                        {{ form_label(form.dateDebut, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.dateDebut, {
+                            attr: {
+                                class: 'form-control'
+                            }
+                        }) }}
+
+                        {{ form_errors(form.dateDebut) }}
+
+                    </div>
+                {% endif %}
+
+                {# DATE FIN #}
+                {% if form.dateFin is defined %}
+                    <div class="col-md-6">
+
+                        {{ form_label(form.dateFin, null, {
+                            label_attr: {
+                                class: 'form-label fw-semibold'
+                            }
+                        }) }}
+
+                        {{ form_widget(form.dateFin, {
+                            attr: {
+                                class: 'form-control'
+                            }
+                        }) }}
+
+                        <div class="form-text">
+                            Laissez vide si la règle reste active sans limite.
+                        </div>
+
+                        {{ form_errors(form.dateFin) }}
+
+                    </div>
+                {% endif %}
+
+                {# TEXTE DE REFERENCE #}
+                {% if form.texteReference is defined %}
+                    <div class="col-12">
+
+                        <div class="card border-0 bg-light-subtle rounded-4">
+
+                            <div class="card-body">
+
+                                <div class="d-flex align-items-center mb-3">
+
+                                    <i class="bi bi-file-earmark-text text-primary fs-5 me-2"></i>
+
+                                    <h3 class="h6 fw-bold mb-0">
+                                        Texte de référence
+                                    </h3>
+
+                                </div>
+
+                                {{ form_label(form.texteReference, null, {
+                                    label_attr: {
+                                        class: 'form-label fw-semibold'
+                                    }
+                                }) }}
+
+                                {{ form_widget(form.texteReference, {
+                                    attr: {
+                                        class: 'form-control',
+                                        rows: 6,
+                                        placeholder: 'Ex : Décret, arrêté, circulaire ou texte réglementaire justifiant la règle d’équivalence...'
+                                    }
+                                }) }}
+
+                                <div class="form-text">
+
+                                    Référence réglementaire, décret, arrêté ministériel
+                                    ou note administrative associée à cette règle.
+
+                                </div>
+
+                                {{ form_errors(form.texteReference) }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                {% endif %}
+
+            </div>
+
+            {# RESTE DES CHAMPS NON RENDUS #}
+            {{ form_rest(form) }}
+
+            {# ACTIONS #}
+            <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-5 pt-4 border-top">
+
+                <a href="{{ path('admin_regle_equivalence_index') }}"
+                   class="btn btn-light border rounded-pill px-4">
+
+                    <i class="bi bi-x-circle me-1"></i>
+                    Annuler
+
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary rounded-pill px-4">
+
+                    <i class="bi {{ isEdit ? 'bi-check2-circle' : 'bi-save' }} me-1"></i>
+
+                    {{ isEdit ? 'Mettre à jour' : 'Créer la règle' }}
+
+                </button>
+
+            </div>
+
+            {{ form_end(form) }}
+
+        </div>
+
+    </div>
+
+    {# =========================================================
+       AIDE / DOCUMENTATION
+    ========================================================== #}
+    <div class="alert alert-secondary border-0 shadow-sm rounded-4 mt-4">
+
+        <div class="d-flex align-items-start">
+
+            <i class="bi bi-info-circle-fill fs-5 me-3 text-primary"></i>
+
+            <div>
+
+                <div class="fw-semibold mb-1">
+                    Gestion des règles d’équivalence
+                </div>
+
+                <div class="small text-muted">
+                    Chaque règle définit un classement applicable à une période donnée.
+                    Évitez les chevauchements de périodes pour un même diplôme afin
+                    de garantir la cohérence des décisions administratives et des décisions d’équivalence.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

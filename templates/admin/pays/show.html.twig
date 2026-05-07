@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail pays {{ pays.nomFrFr }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="bi bi-flag"></i> {{ pays.nomFrFr }}
+            </h1>
+            <p class="text-muted">{{ pays.nomEnGb }} ({{ pays.alpha2 }})</p>
+        </div>
+        <div>
+            <a href="{{ path('admin_pays_edit', { id: pays.id }) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Modifier
+            </a>
+            <a href="{{ path('admin_pays_index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    Informations générales
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Code numérique</th>
+                            <td>{{ pays.code }}</td>
+                        </tr>
+                        <tr>
+                            <th>Code alpha-2</th>
+                            <td>{{ pays.alpha2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Code alpha-3</th>
+                            <td>{{ pays.alpha3 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nom (français)</th>
+                            <td>{{ pays.nomFrFr }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nom (anglais)</th>
+                            <td>{{ pays.nomEnGb }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    Diplômes associés ({{ pays.diplomes|length }})
+                </div>
+                <div class="card-body">
+                    {% if pays.diplomes|length > 0 %}
+                        <ul class="list-group">
+                            {% for diplome in pays.diplomes %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ diplome.titre }}</strong><br>
+                                        <small class="text-muted">{{ diplome.organisme }}</small>
+                                    </div>
+                                    <span class="badge bg-info">{{ diplome.categorie }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center">Aucun diplôme lié à ce pays.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dossiers liés - {{ diplome.titre }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="bi bi-folder2-open"></i> Dossiers liés à « {{ diplome.titre|e }} »
+            </h1>
+            <p class="text-muted">Liste des demandes d'équivalence pour ce diplôme</p>
+        </div>
+        <a href="{{ path('admin_diplome_show', { id: diplome.id }) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour au diplôme
+        </a>
+    </div>
+
+    {# Statistiques #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card text-bg-secondary">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold">{{ stats.total|default(0) }}</div>
+                    <div>Total</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-bg-warning">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold">{{ stats.submitted|default(0) }}</div>
+                    <div>Soumis</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold">{{ stats.approved|default(0) }}</div>
+                    <div>Approuvés</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-bg-danger">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold">{{ stats.rejected|default(0) }}</div>
+                    <div>Rejetés</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-bg-secondary">
+                <div class="card-body text-center">
+                    <div class="fs-3 fw-bold">{{ stats.draft|default(0) }}</div>
+                    <div>Brouillons</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Formulaire de filtres #}
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-numero">N° dossier</label>
+                    <input type="text" id="filter-numero" name="numero" class="form-control" value="{{ filters.numero|default('') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-nom">Candidat (nom/prénom)</label>
+                    <input type="text" id="filter-nom" name="nom" class="form-control" value="{{ filters.nom|default('') }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-statut">Statut</label>
+                    <select id="filter-statut" name="statut" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="draft" {{ filters.statut == 'draft' ? 'selected' : '' }}>Brouillon</option>
+                        <option value="submitted" {{ filters.statut == 'submitted' ? 'selected' : '' }}>Soumis</option>
+                        <option value="in_review" {{ filters.statut == 'in_review' ? 'selected' : '' }}>En analyse</option>
+                        <option value="in_committee" {{ filters.statut == 'in_committee' ? 'selected' : '' }}>En commission</option>
+                        <option value="approved" {{ filters.statut == 'approved' ? 'selected' : '' }}>Approuvé</option>
+                        <option value="rejected" {{ filters.statut == 'rejected' ? 'selected' : '' }}>Rejeté</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="{{ path('admin_diplome_equivalences', { id: diplome.id }) }}" class="btn btn-secondary w-100">Réinitialiser</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Tableau paginé #}
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>N° dossier</th>
+                        <th>Candidat</th>
+                        <th>Date demande</th>
+                        <th>Statut</th>
+                        <th>Décision</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equivalence in pagination %}
+                        <tr>
+                            <td><strong>{{ equivalence.numeroDossier|e }}</strong></td>
+                            <td>{{ equivalence.nom|e }} {{ equivalence.prenom|e }}</td>
+                            <td>{{ equivalence.createdAt|date('d/m/Y') }}</td>
+                            <td>
+                                {% set status_badge = {
+                                    'draft': 'secondary',
+                                    'submitted': 'primary',
+                                    'in_review': 'warning',
+                                    'in_committee': 'info',
+                                    'approved': 'success',
+                                    'rejected': 'danger'
+                                } %}
+                                <span class="badge bg-{{ status_badge[equivalence.status]|default('secondary') }}">
+                                    {{ equivalence.status|replace({'_': ' '})|title|e }}
+                                </span>
+                            </td>
+                            <td>{{ equivalence.decision|default('—')|e }}</td>
+                            <td class="text-end">
+                                <a href="{{ path('equivalence_show', { id: equivalence.id }) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Consulter
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center py-4 text-muted">Aucun dossier trouvé.{% if filters.statut or filters.nom or filters.numero %} Modifiez vos filtres.{% endif %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# Pagination #}
+    <div class="mt-3 d-flex justify-content-center">
+        {{ knp_pagination_render(pagination) }}
+    </div>
+</div>
+{% endblock %}

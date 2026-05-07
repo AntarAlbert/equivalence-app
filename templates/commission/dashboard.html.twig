@@ -1,0 +1,215 @@
+{# templates/commission/dashboard.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Commission - Tableau de bord{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">
+                <i class="bi bi-people-fill text-primary"></i> Commission d'équivalence
+            </h1>
+            <p class="text-muted mb-0">Gestion des validations des dossiers d'équivalence</p>
+        </div>
+    </div>
+
+    {# STATS #}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3">
+            <div class="card-modern p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-muted small">En attente</div>
+                        <div class="fs-2 fw-bold">{{ submitted.getTotalItemCount }}</div>
+                    </div>
+                    <div class="text-warning fs-1"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card-modern p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-muted small">En analyse</div>
+                        <div class="fs-2 fw-bold">{{ inReview.getTotalItemCount }}</div>
+                    </div>
+                    <div class="text-primary fs-1"><i class="bi bi-search"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card-modern p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-muted small">Validés</div>
+                        <div class="fs-2 fw-bold">{{ approvedCount }}</div>
+                    </div>
+                    <div class="text-success fs-1"><i class="bi bi-check-circle"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card-modern p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-muted small">Rejetés</div>
+                        <div class="fs-2 fw-bold">{{ rejectedCount }}</div>
+                    </div>
+                    <div class="text-danger fs-1"><i class="bi bi-x-circle"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ONGLETS pour les différents statuts #}
+    <div class="card-modern">
+        <div class="p-4 border-bottom">
+            <ul class="nav nav-tabs card-header-tabs" id="dossiersTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#submitted" type="button" role="tab">
+                        <i class="bi bi-clock-history"></i> En attente ({{ submitted.getTotalItemCount }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#inReview" type="button" role="tab">
+                        <i class="bi bi-search"></i> En analyse ({{ inReview.getTotalItemCount }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#committee" type="button" role="tab">
+                        <i class="bi bi-chat-dots"></i> En délibération ({{ committee.getTotalItemCount }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content">
+            {# --- Onglet : En attente (submitted) --- #}
+            <div class="tab-pane fade show active" id="submitted" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-modern align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>N° dossier</th>
+                                <th>Candidat</th>
+                                <th>Diplôme</th>
+                                <th>Établissement</th>
+                                <th>Pays</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in submitted %}
+                                <tr>
+                                    <td><strong>{{ item.numeroDossier }}</strong></td>
+                                    <td>{{ item.nom }} {{ item.prenom }}</td>
+                                    <td>
+                                        {{ item.diplomeReference ? item.diplomeReference.titre : '—' }}
+                                    </td>
+                                    <td>
+                                        {{ item.diplomeReference and item.diplomeReference.etablissement ? item.diplomeReference.etablissement.nom : '—' }}
+                                    </td>
+                                    <td>
+                                        {{ item.diplomeReference and item.diplomeReference.etablissement and item.diplomeReference.etablissement.pays ? item.diplomeReference.etablissement.pays.nomFrFr : '—' }}
+                                    </td>
+                                    <td>
+                                        <form method="post" action="{{ path('commission_transition', { id: item.id, transition: 'start_review' }) }}" style="display:inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('transition_' ~ item.id) }}">
+                                            <button class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Analyser</button>
+                                        </form>
+                                        <a href="{{ path('commission_show', { id: item.id }) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Aucun dossier en attente.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(submitted) }}
+                </div>
+            </div>
+
+            {# --- Onglet : En analyse (in_review) --- #}
+            <div class="tab-pane fade" id="inReview" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-modern align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>N° dossier</th>
+                                <th>Candidat</th>
+                                <th>Diplôme</th>
+                                <th>Établissement</th>
+                                <th>Pays</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in inReview %}
+                                <tr>
+                                    <td><strong>{{ item.numeroDossier }}</strong></td>
+                                    <td>{{ item.nom }} {{ item.prenom }}</td>
+                                    <td>{{ item.diplomeReference ? item.diplomeReference.titre : '—' }}</td>
+                                    <td>{{ item.diplomeReference and item.diplomeReference.etablissement ? item.diplomeReference.etablissement.nom : '—' }}</td>
+                                    <td>{{ item.diplomeReference and item.diplomeReference.etablissement and item.diplomeReference.etablissement.pays ? item.diplomeReference.etablissement.pays.nomFrFr : '—' }}</td>
+                                    <td>
+                                        <form method="post" action="{{ path('commission_transition', { id: item.id, transition: 'send_to_committee' }) }}" style="display:inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('transition_' ~ item.id) }}">
+                                            <button class="btn btn-sm btn-info"><i class="bi bi-chat-dots"></i> Transmettre en commission</button>
+                                        </form>
+                                        <a href="{{ path('commission_show', { id: item.id }) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Aucun dossier en analyse.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(inReview) }}
+                </div>
+            </div>
+
+            {# --- Onglet : En délibération (in_committee) --- #}
+            <div class="tab-pane fade" id="committee" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-modern align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>N° dossier</th>
+                                <th>Candidat</th>
+                                <th>Diplôme</th>
+                                <th>Établissement</th>
+                                <th>Pays</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in committee %}
+                                <tr>
+                                    <td><strong>{{ item.numeroDossier }}</strong></td>
+                                    <td>{{ item.nom }} {{ item.prenom }}</td>
+                                    <td>{{ item.diplomeReference ? item.diplomeReference.titre : '—' }}</td>
+                                    <td>{{ item.diplomeReference and item.diplomeReference.etablissement ? item.diplomeReference.etablissement.nom : '—' }}</td>
+                                    <td>{{ item.diplomeReference and item.diplomeReference.etablissement and item.diplomeReference.etablissement.pays ? item.diplomeReference.etablissement.pays.nomFrFr : '—' }}</td>
+                                    <td>
+                                        <a href="{{ path('commission_show', { id: item.id }) }}" class="btn btn-sm btn-outline-primary">Délibérer</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Aucun dossier en délibération.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    {{ knp_pagination_render(committee) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

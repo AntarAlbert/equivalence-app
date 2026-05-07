@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Proposer un diplôme{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Proposer un diplôme à la commission</h1>
+    {{ form_start(form) }}
+        {{ form_row(form.titre) }}
+        {{ form_row(form.etablissement) }} {# établissement d'origine du diplôme #}
+        {{ form_row(form.domaine) }}
+        {{ form_row(form.niveau) }}
+        <button type="submit" class="btn btn-success">Envoyer pour validation</button>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+security:
+
+    password_hashers:
+
+        App\Entity\User:
+            algorithm: auto
+
+    providers:
+
+        app_provider:
+
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        main:
+
+            lazy: true
+
+            provider: app_provider
+
+            custom_authenticator:
+                App\Security\LoginFormAuthenticator
+
+            logout:
+                path: app_logout
+
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
+                path: /
+
+    role_hierarchy:
+
+        ROLE_ADMIN:
+            - ROLE_AGENT
+            - ROLE_COMMISSION
+
+        ROLE_SUPER_ADMIN:
+            - ROLE_ADMIN
+
+    access_control:
+
+        - {
+            path: ^/login,
+            roles: PUBLIC_ACCESS
+          }
+
+        - {
+            path: ^/logout,
+            roles: PUBLIC_ACCESS
+          }
+
+        - {
+            path: ^/admin,
+            roles: ROLE_ADMIN
+          }
+
+        - {
+            path: ^/agent,
+            roles: ROLE_AGENT
+          }
+
+        - {
+            path: ^/commission,
+            roles: ROLE_COMMISSION
+          }
+
+        - {
+            path: ^/,
+            roles: ROLE_AGENT
+          }

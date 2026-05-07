@@ -1,0 +1,365 @@
+{# templates/admin/diplome/show.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Détail du diplôme - {{ diplome.titre }}
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    {# =========================================================
+       HEADER
+    ========================================================== #}
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+
+        <div>
+
+            <h1 class="h2 fw-bold text-primary mb-1">
+                <i class="bi bi-award-fill me-2"></i>
+                {{ diplome.titre|e }}
+            </h1>
+
+            <p class="text-muted mb-0">
+                Référentiel des diplômes
+            </p>
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            {# DOSSIERS LIÉS #}
+            <a href="{{ path('admin_diplome_equivalences', { id: diplome.id }) }}"
+               class="btn btn-info text-white rounded-pill px-4">
+
+                <i class="bi bi-folder2-open me-1"></i>
+
+                Voir les dossiers
+
+                <span class="badge bg-white text-dark ms-2">
+                    {{ diplome.equivalences|length }}
+                </span>
+
+            </a>
+
+            {# MODIFIER #}
+            {% if is_granted('ROLE_ADMIN') %}
+
+                <a href="{{ path('admin_diplome_edit', { id: diplome.id }) }}"
+                   class="btn btn-warning rounded-pill px-4">
+
+                    <i class="bi bi-pencil-square me-1"></i>
+                    Modifier
+
+                </a>
+
+            {% endif %}
+
+            {# RETOUR #}
+            <a href="{{ path('admin_diplome_index') }}"
+               class="btn btn-outline-secondary rounded-pill px-4">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Retour
+
+            </a>
+
+        </div>
+
+    </div>
+
+    {# =========================================================
+       INFORMATIONS GÉNÉRALES
+    ========================================================== #}
+    <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+
+        <div class="card-header bg-light py-3">
+
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-info-circle me-2 text-primary"></i>
+                Informations générales
+            </h5>
+
+        </div>
+
+        <div class="card-body p-4">
+
+            <div class="row g-4">
+
+                {# TITRE #}
+                <div class="col-md-6">
+
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-award me-1"></i>
+                        Titre du diplôme
+                    </div>
+
+                    <div class="fw-semibold fs-5">
+                        {{ diplome.titre|e }}
+                    </div>
+
+                </div>
+
+                {# ÉTABLISSEMENT #}
+                <div class="col-md-6">
+
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-building me-1"></i>
+                        Établissement / Université
+                    </div>
+
+                    {% if diplome.etablissement %}
+
+                        <div class="fw-semibold">
+                            {{ diplome.etablissement.nom|e }}
+                        </div>
+
+                        {% if diplome.etablissement.ville %}
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                {{ diplome.etablissement.ville|e }}
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+
+                        <span class="text-muted">
+                            {{ diplome.organisme|default('—')|e }}
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+                {# PAYS #}
+                <div class="col-md-6">
+
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-globe-europe-africa me-1"></i>
+                        Pays
+                    </div>
+
+                    {% if diplome.etablissement and diplome.etablissement.pays %}
+
+                        <div class="fw-semibold">
+                            {{ diplome.etablissement.pays.nomFrFr|e }}
+                        </div>
+
+                    {% else %}
+
+                        <span class="text-muted">
+                            —
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+                {# ORGANISME HISTORIQUE #}
+                <div class="col-md-6">
+
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-bank me-1"></i>
+                        Organisme historique
+                    </div>
+
+                    <div>
+                        {{ diplome.organisme|default('—')|e }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {# =========================================================
+       RÈGLES D'ÉQUIVALENCE
+    ========================================================== #}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-calendar-range me-2 text-primary"></i>
+                Historique des règles d’équivalence
+            </h5>
+
+            {% if is_granted('ROLE_ADMIN') %}
+
+                <a href="{{ path('admin_regle_equivalence_new', { diplome: diplome.id }) }}"
+                   class="btn btn-sm btn-primary rounded-pill px-3">
+
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Ajouter une règle
+
+                </a>
+
+            {% endif %}
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% set regles = diplome.reglesEquivalence %}
+
+            {% if regles|length > 0 %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Période</th>
+                                <th>Classement</th>
+                                <th>Cadre</th>
+                                <th>Échelle</th>
+                                <th>Catégorie</th>
+                                <th>Bonification</th>
+                                <th>Statut</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for regle in regles|sort((a, b) => b.dateDebut <=> a.dateDebut) %}
+
+                                <tr>
+
+                                    <td class="small">
+
+                                        <div>
+                                            <strong>Début :</strong>
+                                            {{ regle.dateDebut|date('d/m/Y') }}
+                                        </div>
+
+                                        <div>
+
+                                            <strong>Fin :</strong>
+
+                                            {% if regle.dateFin %}
+                                                {{ regle.dateFin|date('d/m/Y') }}
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    Non définie
+                                                </span>
+                                            {% endif %}
+
+                                        </div>
+
+                                    </td>
+
+                                    <td class="fw-semibold text-primary">
+                                        {{ regle.classementComplet|e }}
+                                    </td>
+
+                                    <td>
+                                        {{ regle.cadre.value|e }}
+                                    </td>
+
+                                    <td>
+                                        {{ regle.echelle.value|e }}
+                                    </td>
+
+                                    <td>
+
+                                        <span class="badge bg-light text-dark border">
+                                            {{ regle.categorie|e }}
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+                                        +{{ regle.bonification }}
+                                        an{{ regle.bonification > 1 ? 's' : '' }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if regle.actif %}
+
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Active
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-pause-circle me-1"></i>
+                                                Inactive
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                    <td class="text-end pe-4">
+
+                                        {% if is_granted('ROLE_ADMIN') %}
+
+                                            <a href="{{ path('admin_regle_equivalence_edit', { id: regle.id }) }}"
+                                               class="btn btn-sm btn-outline-primary rounded-pill"
+                                               title="Modifier">
+
+                                                <i class="bi bi-pencil-square"></i>
+
+                                            </a>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <i class="bi bi-inbox display-6 text-muted d-block mb-3"></i>
+
+                    <h5 class="fw-semibold">
+                        Aucune règle d’équivalence
+                    </h5>
+
+                    <p class="text-muted mb-3">
+                        Ce diplôme ne possède encore aucune règle de classement.
+                    </p>
+
+                    {% if is_granted('ROLE_ADMIN') %}
+
+                        <a href="{{ path('admin_regle_equivalence_new', { diplome: diplome.id }) }}"
+                           class="btn btn-primary rounded-pill px-4">
+
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Ajouter une règle
+
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

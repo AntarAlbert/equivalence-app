@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer une règle d'équivalence{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Nouvelle règle pour le diplôme : {{ diplome.titre }}</h1>
+    {{ form_start(form) }}
+        {{ form_row(form.cadre) }}
+        {{ form_row(form.echelle) }}
+        {{ form_row(form.categorie) }}
+        {{ form_row(form.bonification) }}
+        {{ form_row(form.dateDebut) }}
+        {{ form_row(form.dateFin) }}
+        {{ form_row(form.actif) }}
+        {{ form_row(form.texteReference) }}
+        <button type="submit" class="btn btn-primary">Enregistrer la règle</button>
+    {{ form_end(form) }}
+</div>
+{% endblock %}
