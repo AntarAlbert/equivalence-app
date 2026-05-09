@@ -102,10 +102,12 @@ class RegleEquivalence
     // SOFT DELETE
     // =====================================================
 
-    public function softDelete(): void
-    {
-        $this->deletedAt = new \DateTimeImmutable();
-    }
+    public function softDelete(): self
+{
+    $this->deletedAt = new \DateTimeImmutable();
+
+    return $this;
+}
 
     public function isDeleted(): bool
     {
@@ -313,4 +315,13 @@ class RegleEquivalence
     {
         return $this->getClassementComplet();
     }
+
+    //---------------------------------------------------------------------
+ public function restore(): self
+{
+    $this->deletedAt = null;
+
+    return $this;
+}
+
 }

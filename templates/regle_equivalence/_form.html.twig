@@ -1,11 +1,54 @@
 {{ form_start(form) }}
-    {{ form_row(form.diplome) }}
-    {{ form_row(form.classement) }}
-    {{ form_row(form.dateDebut) }}
-    {{ form_row(form.dateFin) }}
-    {{ form_row(form.commentaire) }}
-    {{ form_row(form.actif) }}
+<div class="row g-3">
+	<div class="col-md-12">
+
+
+{{ form_row(form.diplome) }}
+
+</div>
+
+<div class="col-md-6">
+	{{ form_row(form.cadre) }}
+</div>
+
+<div class="col-md-6">
+	{{ form_row(form.echelle) }}
+</div>
+
+<div class="col-md-6">
+	{{ form_row(form.categorie) }}
+</div>
+
+<div class="col-md-6">
+	{{ form_row(form.bonification) }}
+</div>
+
+<div class="col-md-6">
+	{{ form_row(form.dateDebut) }}
+
+</div>
+
+<div class="col-md-6">
+
+
+{{ form_row(form.dateFin) }}
+
+</div>
+
+<div class="col-md-12">
+	{{ form_row(form.texteReference) }}
+</div>
+
+<div class="col-md-12">
+	{{ form_row(form.actif) }}
+
+
+</div></div><div class="mt-4 d-flex gap-2">
+
 
     <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
     <a href="{{ cancel_path }}" class="btn btn-secondary">Annuler</a>
+</div>
+
+
 {{ form_end(form) }}

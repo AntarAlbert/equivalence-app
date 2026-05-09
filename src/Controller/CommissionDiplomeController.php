@@ -6,6 +6,7 @@ use App\Entity\Diplome;
 use App\Entity\RegleEquivalence;
 use App\Form\RegleEquivalenceType;
 use App\Repository\DiplomeRepository;
+use App\Service\RegleEquivalenceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -69,25 +70,27 @@ class CommissionDiplomeController extends AbstractController
         return $this->redirectToRoute('commission_diplome_index');
     }
 
+    #[Route('/{id}/regle/new', name: 'commission_regle_new', methods: ['GET', 'POST'])]
+public function newRegle(Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
+{
+    $regle = new RegleEquivalence();
+    $regle->setDiplome($diplome);
+    $form = $this->createForm(RegleEquivalenceType::class, $regle);
+    $form->handleRequest($request);
 
-    public function newRegle(Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
-    {
-        $regle = new RegleEquivalence();
-        $regle->setDiplome($diplome);
-        $form = $this->createForm(RegleEquivalenceType::class, $regle);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $manager->save($regle);
-            $this->addFlash('success', 'Règle créée.');
-            return $this->redirectToRoute('commission_diplome_index');
-        }
-
-        return $this->render('regle_equivalence/form.html.twig', [
-            'form' => $form->createView(),
-            'diplome' => $diplome,
-            'isEdit' => false,
-            'cancel_path' => $this->generateUrl('commission_diplome_index'),
-        ]);
+    if ($form->isSubmitted() && $form->isValid()) {
+        $manager->save($regle);
+        $this->addFlash('success', 'Règle créée.');
+        return $this->redirectToRoute('commission_diplome_index');
     }
+
+    return $this->render('admin/regle_equivalence/form.html.twig', [
+        'form' => $form->createView(),
+        'regle' => $regle,
+        'diplome' => $diplome,         // facultatif car accessible via $regle->getDiplome()
+        'isEdit' => false,
+        'cancel_path' => $this->generateUrl('commission_diplome_index'),
+    ]);
+}
+
 }

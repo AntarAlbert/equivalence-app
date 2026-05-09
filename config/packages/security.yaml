@@ -1,78 +1,57 @@
+# config/packages/security.yaml
 security:
+    role_hierarchy:
+        ROLE_CANDIDAT: []
+        ROLE_ETABLISSEMENT: []
+        ROLE_COMMISSION: []
+        ROLE_AGENT: []
+        ROLE_ADMIN:
+            [ROLE_AGENT, ROLE_COMMISSION, ROLE_ETABLISSEMENT, ROLE_CANDIDAT]
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN]
 
     password_hashers:
-
-        App\Entity\User:
-            algorithm: auto
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
 
     providers:
-
-        app_provider:
-
+        app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
 
     firewalls:
-
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
         main:
-
             lazy: true
+            provider: app_user_provider
 
-            provider: app_provider
-
-            custom_authenticator:
-                App\Security\LoginFormAuthenticator
+            # Authentification par formulaire (intégré)
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: email
+                password_parameter: password
+                enable_csrf: true
+                csrf_token_id: authenticate
+                default_target_path: after_login # <- nom de la route de redirection
+                always_use_default_target_path: true
 
             logout:
                 path: app_logout
+                target: app_login
+                invalidate_session: true
 
             remember_me:
-                secret: '%kernel.secret%'
-                lifetime: 604800
-                path: /
-
-    role_hierarchy:
-
-        ROLE_ADMIN:
-            - ROLE_AGENT
-            - ROLE_COMMISSION
-
-        ROLE_SUPER_ADMIN:
-            - ROLE_ADMIN
+                secret: "%kernel.secret%"
+                lifetime: 604800 # 7 jours
 
     access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
 
-        - {
-            path: ^/login,
-            roles: PUBLIC_ACCESS
-          }
-
-        - {
-            path: ^/logout,
-            roles: PUBLIC_ACCESS
-          }
-
-        - {
-            path: ^/admin,
-            roles: ROLE_ADMIN
-          }
-
-        - {
-            path: ^/agent,
-            roles: ROLE_AGENT
-          }
-
-        - {
-            path: ^/commission,
-            roles: ROLE_COMMISSION
-          }
-
-        - {
-            path: ^/,
-            roles: ROLE_AGENT
-          }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/commission, roles: ROLE_COMMISSION }
+        - { path: ^/etablissement, roles: ROLE_ETABLISSEMENT }
+        - { path: ^/equivalence, roles: IS_AUTHENTICATED_FULLY }

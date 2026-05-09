@@ -8,6 +8,7 @@ use App\Form\ConfirmationCodeType;
 use App\Form\EquivalenceType;
 use App\Repository\EquivalenceRepository;
 use App\Repository\PaysRepository;
+use App\Security\Voter\EquivalenceVoter;
 use App\Service\CodeSender;
 use App\Service\DocumentUploader;
 use App\Service\PdfGenerator;
@@ -27,9 +28,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 #[Route('/equivalence')]
-#[IsGranted('ROLE_AGENT')]
 class EquivalenceController extends AbstractController
 {
+    // Constantes identiques à celles que vous aviez
     public const STATUS_DRAFT = 'draft';
     public const STATUS_SUBMITTED = 'submitted';
     public const STATUS_IN_REVIEW = 'in_review';
@@ -43,97 +44,89 @@ class EquivalenceController extends AbstractController
 
     public const SENSITIVE_TRANSITIONS = ['submit', 'approve', 'reject', 'ask_modification'];
 
-  #[Route('/', name: 'equivalence_index', methods: ['GET'])]
-public function index(
-    EquivalenceRepository $repository,
-    PaginatorInterface $paginator,
-    Request $request
-): Response {
+    // INDEX (avec filtre CANDIDAT)
+    #[Route('/', name: 'equivalence_index', methods: ['GET'])]
+    public function index(
+        EquivalenceRepository $repository,
+        PaginatorInterface $paginator,
+        Request $request
+    ): Response {
+        $page = $request->query->getInt('page', 1);
+        $limit = 20;
+        $search = trim((string) $request->query->get('search', ''));
+        $currentStatus = trim((string) $request->query->get('status', ''));
 
-    $page = $request->query->getInt('page', 1);
+        $queryBuilder = $repository->createQueryBuilder('e')
+            ->leftJoin('e.diplomeReference', 'd')
+            ->leftJoin('d.etablissement', 'et')
+            ->leftJoin('et.pays', 'p')
+            ->addSelect('d', 'et', 'p')
+            ->orderBy('e.createdAt', 'DESC');
 
-    $limit = 20;
+        // SEARCH
+        if ($search !== '') {
+            $queryBuilder
+                ->andWhere('
+                    e.numeroDossier LIKE :search OR
+                    e.nom LIKE :search OR
+                    e.prenom LIKE :search OR
+                    e.email LIKE :search OR
+                    d.titre LIKE :search OR
+                    et.nom LIKE :search OR
+                    p.nomFrFr LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
 
-    $search = trim((string) $request->query->get('search', ''));
+        // FILTRE STATUT
+        if ($currentStatus !== '') {
+            $queryBuilder
+                ->andWhere('e.status = :status')
+                ->setParameter('status', $currentStatus);
+        }
 
-    $currentStatus = trim((string) $request->query->get('status', ''));
+        // IMPORTANT : candidat ne voit que ses dossiers
+        if ($this->isGranted('ROLE_CANDIDAT') &&
+            !$this->isGranted('ROLE_AGENT') &&
+            !$this->isGranted('ROLE_COMMISSION') &&
+            !$this->isGranted('ROLE_ADMIN')) {
+            $queryBuilder
+                ->andWhere('e.user = :user')
+                ->setParameter('user', $this->getUser());
+        }
 
-    $queryBuilder = $repository->createQueryBuilder('e')
-        ->leftJoin('e.diplomeReference', 'd')
-        ->leftJoin('d.etablissement', 'et')
-        ->leftJoin('et.pays', 'p')
-        ->addSelect('d', 'et', 'p')
-        ->orderBy('e.createdAt', 'DESC');
+        $pagination = $paginator->paginate($queryBuilder, $page, $limit);
 
-    // =========================
-    // RECHERCHE
-    // =========================
-
-    if ($search !== '') {
-
-        $queryBuilder
-            ->andWhere('
-                e.numeroDossier LIKE :search
-                OR e.nom LIKE :search
-                OR e.prenom LIKE :search
-                OR e.email LIKE :search
-                OR d.titre LIKE :search
-                OR et.nom LIKE :search
-                OR p.nomFrFr LIKE :search
-            ')
-            ->setParameter('search', '%' . $search . '%');
+        return $this->render('equivalence/index.html.twig', [
+            'items' => $pagination,
+            'search' => $search,
+            'currentStatus' => $currentStatus,
+        ]);
     }
 
-    // =========================
-    // FILTRE STATUT
-    // =========================
-
-    if ($currentStatus !== '') {
-
-        $queryBuilder
-            ->andWhere('e.status = :status')
-            ->setParameter('status', $currentStatus);
-    }
-
-    $pagination = $paginator->paginate(
-        $queryBuilder,
-        $page,
-        $limit
-    );
-
-    return $this->render('equivalence/index.html.twig', [
-
-        'items' => $pagination,
-
-        'search' => $search,
-
-        'currentStatus' => $currentStatus,
-
-    ]);
-}
-
-     // src/Controller/EquivalenceController.php
-
+    // NOUVEAU DOSSIER – accès limité aux candidats
     #[Route('/new', name: 'equivalence_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_CANDIDAT')]
     public function new(
         Request $request,
         EntityManagerInterface $em,
         DocumentUploader $uploader,
         LoggerInterface $logger,
         EquivalenceRepository $repository,
-        PaysRepository $paysRepository  // ← ajout
+        PaysRepository $paysRepository
     ): Response {
         $equivalence = new Equivalence();
-        // Définir la nationalité par défaut : Madagascar
-        $madagascar = $paysRepository->findOneByAlpha2('MG'); // ou find(130)
+        $user = $this->getUser();
+
+        if ($user) {
+            $equivalence->setUser($user);
+            $equivalence->setEmail($user->getUserIdentifier());
+        }
+
+        $madagascar = $paysRepository->findOneByAlpha2('MG');
         if ($madagascar) {
             $equivalence->setNationalite($madagascar);
         }
 
-        $user = $this->getUser();
-        if ($user) {
-            $equivalence->setEmail($user->getUserIdentifier());
-        }
         $form = $this->createForm(EquivalenceType::class, $equivalence);
         $form->handleRequest($request);
 
@@ -145,7 +138,6 @@ public function index(
             ];
             $hasErrors = false;
 
-            // Traitement des fichiers
             foreach ($documentsMapping as $field => $type) {
                 $file = $form->get($field)->getData();
                 if (!$file instanceof UploadedFile) {
@@ -173,11 +165,10 @@ public function index(
                 return $this->render('equivalence/new.html.twig', ['form' => $form->createView()]);
             }
 
-            // Génération du numéro de dossier séquentiel par année
             $numeroDossier = $repository->getNextNumeroDossierForCurrentYear();
             $equivalence->setNumeroDossier($numeroDossier);
 
-            // Remplissage des anciens champs (rétrocompatibilité)
+            // Remplissage anciens champs pour rétrocompatibilité
             if ($equivalence->getDiplomeReference()) {
                 $diplomeRef = $equivalence->getDiplomeReference();
                 $equivalence->setDiplome($diplomeRef->getTitre() ?? '');
@@ -188,20 +179,18 @@ public function index(
                 }
             }
 
-            // Validation CNI selon âge
+            // Validation CNI selon âge (même code)
             $dateNaissance = $equivalence->getDateNaissance();
             $age = null;
             if ($dateNaissance) {
                 $age = (new \DateTimeImmutable())->diff($dateNaissance)->y;
             }
-
             if ($age !== null && $age >= 18) {
                 if (empty($equivalence->getCni()) || empty($equivalence->getCniDateDelivrance()) || empty($equivalence->getCniLieuDelivrance())) {
                     $this->addFlash('danger', 'Pour un majeur, le numéro CNI, la date et le lieu de délivrance sont obligatoires.');
                     return $this->render('equivalence/new.html.twig', ['form' => $form->createView()]);
                 }
             } else {
-                // Mineur : effacement des champs CNI
                 $equivalence->setCni(null);
                 $equivalence->setCniDateDelivrance(null);
                 $equivalence->setCniLieuDelivrance(null);
@@ -212,333 +201,148 @@ public function index(
             try {
                 $em->persist($equivalence);
                 $em->flush();
-                $logger->info('Dossier créé', ['id' => $equivalence->getId(), 'numero' => $equivalence->getNumeroDossier(), 'user' => $user?->getUserIdentifier()]);
+                $logger->info('Dossier créé', ['id' => $equivalence->getId(), 'numero' => $numeroDossier, 'user' => $user?->getUserIdentifier()]);
                 $this->addFlash('success', 'Dossier créé avec succès.');
                 return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
             } catch (\Exception $e) {
-                $logger->error('Création dossier', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-                $this->addFlash('danger', 'Une erreur technique est survenue lors de la création du dossier.');
+                $logger->error('Création dossier', ['error' => $e->getMessage()]);
+                $this->addFlash('danger', 'Une erreur technique est survenue.');
             }
         }
 
         return $this->render('equivalence/new.html.twig', ['form' => $form->createView()]);
     }
 
-    #[Route('/{id}/edit', name: 'equivalence_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    // SHOW – protégé par Voter
+    #[Route('/{id}', name: 'equivalence_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
+    public function show(Equivalence $equivalence): Response
+    {
+        return $this->render('equivalence/show.html.twig', ['equivalence' => $equivalence]);
+    }
+ #[Route('/{id}/edit', name: 'equivalence_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+#[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
 public function edit(
-    int $id,
+    Equivalence $equivalence,  // ← Changement clé : injection directe par le ParamConverter
     Request $request,
     EntityManagerInterface $em,
     LoggerInterface $logger,
-    EquivalenceRepository $repository,
     DocumentUploader $uploader
 ): Response {
-    $equivalence = $repository->findWithRelations($id);
-
-    if (!$equivalence) {
-        throw $this->createNotFoundException('Dossier introuvable.');
-    }
-
-    $this->denyAccessUnlessGranted('EDIT', $equivalence);
-
+    // Vérification du statut (modifiable seulement en brouillon ou soumis)
     if (!in_array($equivalence->getStatus(), [
         self::STATUS_DRAFT,
         self::STATUS_SUBMITTED
     ])) {
-
-        $this->addFlash(
-            'warning',
-            'Ce dossier ne peut plus être modifié.'
-        );
-
-        return $this->redirectToRoute('equivalence_show', [
-            'id' => $equivalence->getId()
-        ]);
+        $this->addFlash('warning', 'Ce dossier ne peut plus être modifié.');
+        return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
     }
 
-    $form = $this->createForm(
-        EquivalenceType::class,
-        $equivalence
-    );
-
+    // Formulaire
+    $form = $this->createForm(EquivalenceType::class, $equivalence);
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
-
-        // =====================================================
-        // VALIDATION CNI SELON ÂGE
-        // =====================================================
-
+        // Validation CNI selon âge
         $dateNaissance = $equivalence->getDateNaissance();
-
-        $age = null;
-
-        if ($dateNaissance) {
-
-            $age = (
-                new \DateTimeImmutable()
-            )->diff($dateNaissance)->y;
-        }
+        $age = $dateNaissance ? (new \DateTimeImmutable())->diff($dateNaissance)->y : null;
 
         if ($age !== null && $age >= 18) {
-
-            if (
-                empty($equivalence->getCni()) ||
-                empty($equivalence->getCniDateDelivrance()) ||
-                empty($equivalence->getCniLieuDelivrance())
-            ) {
-
-                $this->addFlash(
-                    'danger',
-                    'Pour un majeur, le numéro CNI, la date et le lieu de délivrance sont obligatoires.'
-                );
-
-                return $this->render(
-                    'equivalence/edit.html.twig',
-                    [
-                        'form' => $form->createView(),
-                        'equivalence' => $equivalence
-                    ]
-                );
+            if (empty($equivalence->getCni()) || empty($equivalence->getCniDateDelivrance()) || empty($equivalence->getCniLieuDelivrance())) {
+                $this->addFlash('danger', 'Pour un majeur, le numéro CNI, la date et le lieu de délivrance sont obligatoires.');
+                return $this->render('equivalence/edit.html.twig', [
+                    'form' => $form->createView(),
+                    'equivalence' => $equivalence
+                ]);
             }
-
         } else {
-
-            // Mineur => suppression infos CNI
-
+            // Mineur : effacement des infos CNI
             $equivalence->setCni(null);
-
             $equivalence->setCniDateDelivrance(null);
-
             $equivalence->setCniLieuDelivrance(null);
-
             $equivalence->setCniDateDuplicata(null);
-
             $equivalence->setCniLieuDuplicata(null);
         }
 
-        // =====================================================
-        // SYNCHRONISATION DIPLÔME / ÉTABLISSEMENT
-        // =====================================================
-
+        // Synchronisation diplôme / établissement (si besoin)
         if ($equivalence->getDiplomeReference()) {
-
             $diplomeRef = $equivalence->getDiplomeReference();
-
-            $equivalence->setDiplome(
-                $diplomeRef->getTitre() ?? ''
-            );
-
+            $equivalence->setDiplome($diplomeRef->getTitre() ?? '');
             if ($diplomeRef->getEtablissement()) {
-
                 $etab = $diplomeRef->getEtablissement();
-
-                $equivalence->setUniversite(
-                    $etab->getNom() ?? ''
-                );
-
-                $equivalence->setPays(
-                    $etab->getPays()?->getNomFrFr() ?? ''
-                );
+                $equivalence->setUniversite($etab->getNom() ?? '');
+                $equivalence->setPays($etab->getPays()?->getNomFrFr() ?? '');
             }
         }
 
-     // =====================================================
-        // GESTION DES DOCUMENTS
-        // =====================================================
-
+        // Gestion des documents (upload, remplacement)
         $documentsMapping = [
-
             'diplomaFile'    => Document::TYPE_DIPLOME,
-
             'transcriptFile' => Document::TYPE_RELEVE,
-
             'identityFile'   => Document::TYPE_CIN,
         ];
 
         foreach ($documentsMapping as $field => $type) {
-
             $file = $form->get($field)->getData();
-
-            // Aucun nouveau fichier
             if (!$file instanceof UploadedFile) {
                 continue;
             }
 
             try {
-
-                // =============================================
-                // 1. UPLOAD NOUVEAU DOCUMENT
-                // =============================================
-
+                // Nouveau document
                 $newDocument = new Document();
-
-                $uploader->upload(
-                    $file,
-                    $newDocument,
-                    $type
-                );
-
+                $uploader->upload($file, $newDocument, $type);
                 $equivalence->addDocument($newDocument);
-
                 $em->persist($newDocument);
 
-                // =============================================
-                // 2. SUPPRESSION ANCIENS DOCUMENTS MÊME TYPE
-                // =============================================
-
+                // Suppression des anciens du même type
                 foreach ($equivalence->getDocuments() as $existingDocument) {
+                    if ($existingDocument === $newDocument) continue;
+                    if ($existingDocument->getType() !== $type) continue;
 
-                    // ignorer le nouveau document
-                    if ($existingDocument === $newDocument) {
-                        continue;
-                    }
-
-                    if ($existingDocument->getType() !== $type) {
-                        continue;
-                    }
-
-                    // -----------------------------------------
-                    // suppression physique fichier
-                    // -----------------------------------------
-
-                    $oldPath = $this->getParameter('kernel.project_dir')
-                        . '/public/'
-                        . ltrim($existingDocument->getPath(), '/');
-
+                    $oldPath = $this->getParameter('kernel.project_dir') . '/public/' . ltrim($existingDocument->getPath(), '/');
                     if (is_file($oldPath)) {
-
-                        try {
-                            unlink($oldPath);
-                        } catch (\Throwable $e) {
-
-                            $logger->warning(
-                                'Impossible de supprimer ancien fichier',
-                                [
-                                    'path' => $oldPath,
-                                    'error' => $e->getMessage(),
-                                ]
-                            );
-                        }
+                        try { unlink($oldPath); } catch (\Throwable $e) { /* log */ }
                     }
-
-                    // -----------------------------------------
-                    // suppression Doctrine
-                    // -----------------------------------------
-
                     $equivalence->removeDocument($existingDocument);
-
                     $em->remove($existingDocument);
                 }
-
             } catch (\Throwable $e) {
-
-                $logger->error(
-                    'Erreur upload document modification',
-                    [
-                        'dossier_id' => $equivalence->getId(),
-                        'type'       => $type,
-                        'error'      => $e->getMessage(),
-                    ]
-                );
-
-                $this->addFlash(
-                    'danger',
-                    sprintf(
-                        'Erreur lors du téléversement du document %s.',
-                        $type
-                    )
-                );
-
-                return $this->render(
-                    'equivalence/edit.html.twig',
-                    [
-                        'form' => $form->createView(),
-                        'equivalence' => $equivalence,
-                    ]
-                );
+                $logger->error('Erreur upload document modification', [
+                    'dossier_id' => $equivalence->getId(),
+                    'type' => $type,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->addFlash('danger', 'Erreur lors du téléversement du document ' . $type);
+                return $this->render('equivalence/edit.html.twig', [
+                    'form' => $form->createView(),
+                    'equivalence' => $equivalence,
+                ]);
             }
         }
 
-        // =====================================================
-        // SAUVEGARDE
-        // =====================================================
-
+        // Sauvegarde finale
         try {
-
             $em->flush();
-
-            $logger->info(
-                'Dossier modifié',
-                [
-                    'id'   => $equivalence->getId(),
-                    'user' => $this->getUser()?->getUserIdentifier(),
-                ]
-            );
-
-            $this->addFlash(
-                'success',
-                'Dossier modifié avec succès.'
-            );
-
-            return $this->redirectToRoute(
-                'equivalence_show',
-                [
-                    'id' => $equivalence->getId()
-                ]
-            );
-
+            $logger->info('Dossier modifié', ['id' => $equivalence->getId(), 'user' => $this->getUser()?->getUserIdentifier()]);
+            $this->addFlash('success', 'Dossier modifié avec succès.');
+            return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
         } catch (\Throwable $e) {
-
-            $logger->error(
-                'Erreur modification dossier',
-                [
-                    'id'    => $equivalence->getId(),
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            );
-
-            $this->addFlash(
-                'danger',
-                'Erreur technique lors de la modification.'
-            );
+            $logger->error('Erreur modification dossier', ['id' => $equivalence->getId(), 'error' => $e->getMessage()]);
+            $this->addFlash('danger', 'Erreur technique lors de la modification.');
         }
     }
 
-    return $this->render(
-        'equivalence/edit.html.twig',
-        [
-            'form' => $form->createView(),
-            'equivalence' => $equivalence,
-        ]
-    );
+    return $this->render('equivalence/edit.html.twig', [
+        'form' => $form->createView(),
+        'equivalence' => $equivalence,
+    ]);
 }
 
-
-    #[Route('/{id}', name: 'equivalence_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    // #[IsGranted('VIEW', subject: 'equivalence')]
-    public function show(Equivalence $equivalence): Response
+  #[Route('/{id}/transition/{transition}', name: 'equivalence_transition', methods: ['POST'])]
+    #[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
+    public function transition(Request $request, Equivalence $equivalence, string $transition, #[Autowire(service: 'state_machine.equivalence_state_machine')] WorkflowInterface $workflow, EntityManagerInterface $em, LoggerInterface $logger): Response
     {
-        return $this->render('equivalence/show.html.twig', ['equivalence' => $equivalence]);
-    }
-
-#[Route(
-    '/{id}/transition/{transition}',
-    name: 'equivalence_transition',
-    methods: ['POST'],
-    requirements: ['id' => '\d+', 'transition' => 'submit|start_review|send_to_committee|approve|reject|ask_modification']
-)]
-#[IsGranted('EDIT', subject: 'equivalence')]
-public function transition(
-    Request $request,
-    Equivalence $equivalence,
-    string $transition,
-    #[Autowire(service: 'state_machine.equivalence_state_machine')]
-    WorkflowInterface $workflow,
-    EntityManagerInterface $em,
-    LoggerInterface $logger
-): Response {
     $token = $request->request->get('_token');
     if (!$this->isCsrfTokenValid('transition_' . $equivalence->getId(), $token)) {
         $logger->warning('CSRF invalide', ['dossier_id' => $equivalence->getId(), 'transition' => $transition]);
@@ -604,15 +408,16 @@ public function transition(
     return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
 }
 
-    #[Route('/{id}/pdf', name: 'equivalence_pdf', methods: ['GET'], requirements: ['id' => '\d+'])]
-    #[IsGranted('VIEW', subject: 'equivalence')]
+     #[Route('/{id}/pdf', name: 'equivalence_pdf', methods: ['GET'])]
+    #[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
     public function pdf(Equivalence $equivalence, PdfGenerator $generator): Response
     {
         return $generator->generateArrete($equivalence);
     }
 
-    #[Route('/{id}/delete', name: 'equivalence_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    #[IsGranted('DELETE', subject: 'equivalence')]
+     // DELETE – protégé par Voter
+    #[Route('/{id}/delete', name: 'equivalence_delete', methods: ['POST'])]
+    #[IsGranted(EquivalenceVoter::DELETE, subject: 'equivalence')]
     public function delete(Request $request, Equivalence $equivalence, EntityManagerInterface $em, LoggerInterface $logger): Response
     {
         if (!$this->isCsrfTokenValid('delete' . $equivalence->getId(), $request->request->get('_token'))) {

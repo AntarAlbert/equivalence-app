@@ -1,277 +1,312 @@
-{# templates/base.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
-	<head>
-		<meta charset="UTF-8">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex,nofollow">
+	<meta name="referrer" content="strict-origin-when-cross-origin">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta http-equiv="X-Frame-Options" content="DENY">
+	<meta http-equiv="X-Content-Type-Options" content="nosniff">
+	<meta name="color-scheme" content="light dark">
+	{# ===== CSP — adapte nonces/domaines selon ton environnement ===== #}
+	{# <meta http-equiv="Content-Security-Policy" content="default-src 'self'; ..."> #}
+	<title>{% block title %}Système d'Équivalence{% endblock %}</title>
 
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- Bootstrap 5 + Icons -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+	<!-- Police distinctive : Sora (display) + DM Sans (corps) -->
+	<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-		<meta name="robots" content="noindex,nofollow">
-		<meta name="referrer" content="strict-origin-when-cross-origin">
-
-		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta http-equiv="X-Frame-Options" content="DENY">
-		<meta http-equiv="X-Content-Type-Options" content="nosniff">
-
-		<title>
-			{% block title %}
-				Système d'Équivalence
-			{% endblock %}
-		</title>
-
-		{# =========================================================
-		       CSS
-		    ========================================================= #}
-
-		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
-
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-		<style>:root
-		{
-			--primary-color: #0d6efd;
-			--primary-hover: #0b5ed7;
-			--secondary-color: #6c757d;
-			--light-bg: #f5f7fb;
-			--sidebar-width: 270px;
-			--navbar-height: 70px;
-			--border-color: #e9ecef;
-			--text-color: #495057;
+	<style>
+		/* ===== Variables ===== */
+		:root {
+			--primary:        #1a56db;
+			--primary-dark:   #1240b5;
+			--primary-light:  #dbeafe;
+			--success:        #0d9a4e;
+			--danger:         #dc2626;
+			--warning:        #d97706;
+			--bg:             #f0f4fa;
+			--surface:        #ffffff;
+			--border:         #e2e8f0;
+			--text:           #0f172a;
+			--text-muted:     #64748b;
+			--sidebar-w:      288px;
+			--topbar-h:       68px;
+			--radius-xl:      20px;
+			--radius-lg:      14px;
+			--radius-md:      10px;
+			--shadow-sm:      0 2px 8px rgba(15,23,42,.06);
+			--shadow-md:      0 8px 24px rgba(15,23,42,.09);
+			--transition:     0.2s ease;
+			--font-body:      'DM Sans', system-ui, sans-serif;
+			--font-display:   'Sora', system-ui, sans-serif;
 		}
 
-		* {
-			font-family: 'Inter', sans-serif;
+		/* ----- Dark mode ----- */
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg:         #0f172a;
+				--surface:    #1e2a3b;
+				--border:     #2d3f57;
+				--text:       #e8edf5;
+				--text-muted: #8da0b8;
+				--primary-light: #1e3a6e;
+			}
 		}
 
-		html,
+		*, *::before, *::after { box-sizing: border-box; }
+
 		body {
-			margin: 0;
-			padding: 0;
-			overflow-x: hidden;
-			background: var(--light-bg);
-		}
-
-		body {
+			font-family: var(--font-body);
+			background: var(--bg);
+			color: var(--text);
 			min-height: 100vh;
+			margin: 0;
+			-webkit-font-smoothing: antialiased;
 		}
 
-		a {
-			text-decoration: none;
+		a { text-decoration: none; color: inherit; }
+
+		/* Scrollbar */
+		::-webkit-scrollbar { width: 8px; height: 8px; }
+		::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+		@media (prefers-color-scheme: dark) {
+			::-webkit-scrollbar-thumb { background: #2d3f57; }
 		}
 
-		/* =========================================================
-           NAVBAR
-        ========================================================= */
-
-		.top-navbar {
-			height: var(--navbar-height);
-			background: #fff;
-			border-bottom: 1px solid var(--border-color);
+		/* ===== Topbar ===== */
+		.topbar {
 			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			z-index: 1100;
-			backdrop-filter: blur(8px);
-		}
-
-		.brand-logo {
+			inset: 0 0 auto 0;
+			height: var(--topbar-h);
+			background: rgba(255,255,255,.92);
+			backdrop-filter: blur(20px) saturate(160%);
+			-webkit-backdrop-filter: blur(20px) saturate(160%);
+			border-bottom: 1px solid var(--border);
+			z-index: 1200;
 			display: flex;
 			align-items: center;
-			gap: 0.6rem;
+			padding: 0 1.5rem;
+			gap: 1rem;
+		}
+		@media (prefers-color-scheme: dark) {
+			.topbar { background: rgba(30,42,59,.92); }
+		}
+
+		/* Brand */
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: .75rem;
+			font-family: var(--font-display);
 			font-weight: 700;
 			font-size: 1.05rem;
-			color: var(--primary-color);
+			color: var(--primary);
+			transition: opacity var(--transition);
+		}
+		.brand:hover { opacity: .85; }
+		.brand-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: var(--radius-md);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: var(--primary);
+			color: #fff;
+			font-size: 1.1rem;
+			flex-shrink: 0;
+			box-shadow: 0 6px 18px rgba(26,86,219,.28);
+		}
+		.brand-sub {
+			font-family: var(--font-body);
+			font-size: .7rem;
+			font-weight: 500;
+			color: var(--text-muted);
+			line-height: 1;
 		}
 
-		.brand-logo:hover {
-			color: var(--primary-hover);
-		}
-
-		.sidebar-toggle {
+		/* Menu toggle (mobile) */
+		.menu-toggle {
 			display: none;
-			background: transparent;
 			border: none;
-			font-size: 1.5rem;
-			color: var(--primary-color);
+			background: transparent;
+			color: var(--primary);
+			font-size: 1.55rem;
+			padding: .2rem;
 			cursor: pointer;
+			line-height: 1;
+		}
+		.menu-toggle:focus-visible {
+			outline: 2px solid var(--primary);
+			outline-offset: 2px;
+			border-radius: var(--radius-md);
 		}
 
-		/* =========================================================
-           SIDEBAR
-        ========================================================= */
+		/* User button */
+		.user-btn {
+			margin-left: auto;
+			display: flex;
+			align-items: center;
+			gap: .5rem;
+			padding: .45rem .9rem;
+			border: 1px solid var(--border);
+			border-radius: var(--radius-xl);
+			background: var(--surface);
+			color: var(--text);
+			font-family: var(--font-body);
+			font-size: .88rem;
+			font-weight: 500;
+			cursor: pointer;
+			transition: background var(--transition), border-color var(--transition);
+		}
+		.user-btn:hover { background: var(--bg); border-color: var(--primary); }
+		.user-btn::after { display: none; } /* retire chevron Bootstrap */
 
+		/* Avatar initiales */
+		.user-avatar {
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			background: var(--primary-light);
+			color: var(--primary);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: .75rem;
+			font-weight: 700;
+			font-family: var(--font-display);
+			flex-shrink: 0;
+		}
+
+		/* ===== Sidebar ===== */
 		.sidebar {
-			width: var(--sidebar-width);
-			height: calc(100vh - var(--navbar-height));
 			position: fixed;
-			top: var(--navbar-height);
+			top: var(--topbar-h);
 			left: 0;
-			background: #fff;
-			border-right: 1px solid var(--border-color);
+			width: var(--sidebar-w);
+			height: calc(100vh - var(--topbar-h));
+			background: var(--surface);
+			border-right: 1px solid var(--border);
+			padding: 1rem .9rem 2rem;
 			overflow-y: auto;
 			overflow-x: hidden;
-			padding: 1rem;
-			z-index: 1040;
-			transition: transform 0.25s ease;
+			z-index: 1100;
+			transition: transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s;
 		}
 
-		.sidebar-section-title {
-			font-size: 0.72rem;
+		.sidebar-section {
+			margin: 1.4rem 0 .5rem .4rem;
+			font-size: .68rem;
 			font-weight: 700;
-			color: #adb5bd;
+			font-family: var(--font-display);
 			text-transform: uppercase;
-			letter-spacing: 0.08em;
-			margin: 1.5rem 0 0.75rem;
-			padding-left: 0.5rem;
+			letter-spacing: .09em;
+			color: #94a3b8;
 		}
 
 		.sidebar .nav-link {
 			display: flex;
 			align-items: center;
-			border-radius: 14px;
-			padding: 0.85rem 1rem;
-			margin-bottom: 0.35rem;
-			color: var(--text-color);
+			gap: .8rem;
+			padding: .8rem 1rem;
+			margin-bottom: .25rem;
+			border-radius: var(--radius-lg);
 			font-weight: 500;
-			transition: 0.2s ease;
+			font-size: .9rem;
+			color: var(--text-muted);
+			transition: background var(--transition), color var(--transition);
+			white-space: nowrap;
 		}
-
-		.sidebar .nav-link i {
-			margin-right: 0.8rem;
-			font-size: 1rem;
-			min-width: 20px;
-		}
-
+		.sidebar .nav-link i { font-size: 1rem; flex-shrink: 0; }
 		.sidebar .nav-link:hover {
-			background: rgba(13, 110, 253, .08);
-			color: var(--primary-color);
+			background: var(--primary-light);
+			color: var(--primary);
 		}
-
 		.sidebar .nav-link.active {
-			background: var(--primary-color);
+			background: var(--primary);
 			color: #fff;
-			box-shadow: 0 10px 24px rgba(13, 110, 253, .18);
+			font-weight: 600;
+			box-shadow: 0 6px 20px rgba(26,86,219,.22);
+		}
+		.sidebar .nav-link:focus-visible {
+			outline: 2px solid var(--primary);
+			outline-offset: 1px;
 		}
 
-		/* =========================================================
-           SUBMENU
-        ========================================================= */
-
-		.submenu-wrapper {
-			margin-bottom: 0.5rem;
-		}
-
-		.submenu-toggle {
-			cursor: pointer;
-		}
-
+		/* Sous-menu */
 		.submenu-toggle::after {
-			content: '\F282';
+			content: '\F285';
 			font-family: bootstrap-icons;
 			margin-left: auto;
-			transition: transform 0.2s ease;
-			font-size: 0.85rem;
+			font-size: .8rem;
+			transition: transform .2s ease;
+			flex-shrink: 0;
 		}
-
-		.submenu-toggle[aria-expanded="true"]::after {
-			transform: rotate(90deg);
-		}
+		.submenu-toggle[aria-expanded="true"]::after { transform: rotate(90deg); }
 
 		.sidebar-submenu {
-			margin-top: 0.35rem;
-			margin-left: 0.6rem;
-			padding-left: 0.9rem;
-			border-left: 2px solid #e9f0ff;
+			margin: .25rem 0 .25rem .6rem;
+			padding-left: .9rem;
+			border-left: 2px solid var(--primary-light);
 		}
-
 		.sidebar-submenu .nav-link {
-			padding: 0.72rem 0.9rem;
-			font-size: 0.93rem;
-			border-radius: 12px;
-			margin-bottom: 0.2rem;
+			font-size: .86rem;
+			padding: .7rem .85rem;
+			border-radius: var(--radius-md);
 		}
-
 		.sidebar-submenu .nav-link.active {
-			background: rgba(13, 110, 253, .12);
-			color: var(--primary-color);
+			background: var(--primary-light);
+			color: var(--primary);
 			box-shadow: none;
 			font-weight: 600;
 		}
 
-		/* =========================================================
-           MAIN CONTENT
-        ========================================================= */
-
+		/* ===== Contenu principal ===== */
 		.main-content {
-			margin-left: var(--sidebar-width);
-			margin-top: var(--navbar-height);
-			padding: 2rem;
-			min-height: calc(100vh - var(--navbar-height));
+			margin-left: var(--sidebar-w);
+			margin-top: var(--topbar-h);
+			min-height: calc(100vh - var(--topbar-h));
+			padding: 2rem 2.25rem;
 		}
 
-		/* =========================================================
-           ALERTS
-        ========================================================= */
-
-		.custom-alert {
-			border: none;
-			border-radius: 18px;
-			box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+		/* Flash messages */
+		.flash-wrap {
+			animation: slideIn .3s ease;
+		}
+		@keyframes slideIn {
+			from { opacity:0; transform: translateY(-8px); }
+			to   { opacity:1; transform: translateY(0); }
 		}
 
-		/* =========================================================
-           SCROLLBAR
-        ========================================================= */
-
-		.sidebar::-webkit-scrollbar {
-			width: 8px;
-		}
-
-		.sidebar::-webkit-scrollbar-thumb {
-			background: #dce3ea;
-			border-radius: 50px;
-		}
-
-		/* =========================================================
-           MOBILE
-        ========================================================= */
-
-		@media(max-width: 991px) {
-
-			.sidebar-toggle {
-				display: inline-flex;
-			}
-
-			.sidebar {
-				transform: translateX(-100%);
-				box-shadow: none;
-			}
-
+		/* ===== Responsive ===== */
+		@media (max-width: 991px) {
+			.menu-toggle { display: inline-flex; }
+			.sidebar { transform: translateX(-100%); }
 			.sidebar.open {
 				transform: translateX(0);
-				box-shadow: 0 0 30px rgba(0, 0, 0, .12);
+				box-shadow: 0 20px 60px rgba(0,0,0,.2);
 			}
-
 			.main-content {
 				margin-left: 0;
-				padding: 1.25rem;
-			}
-
-			.sidebar-overlay {
-				position: fixed;
-				inset: 0;
-				background: rgba(0, 0, 0, .35);
-				z-index: 1030;
-				display: none;
-			}
-
-			.sidebar-overlay.show {
-				display: block;
+				padding: 1.25rem 1rem;
 			}
 		}
+
+		/* Overlay mobile */
+		.sidebar-overlay {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: rgba(15,23,42,.5);
+			z-index: 1050;
+			backdrop-filter: blur(2px);
+			-webkit-backdrop-filter: blur(2px);
+		}
+		.sidebar-overlay.show { display: block; }
 	</style>
 
 	{% block stylesheets %}{% endblock %}
@@ -279,370 +314,363 @@
 
 <body>
 
-	<nav class="navbar top-navbar px-4">
-
-		<div class="container-fluid p-0">
-
-			<div class="d-flex align-items-center gap-3">
-
-				<button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Ouvrir le menu">
-					<i class="bi bi-list"></i>
-				</button>
-
-				<a href="{{ path('equivalence_index') }}" class="brand-logo">
-
-					<i class="bi bi-mortarboard-fill"></i>
-
-					<span>Equivalence SI</span>
-
-				</a>
-
-			</div>
-
-			<div class="d-flex align-items-center gap-3">
-
-				{% if app.user %}
-
-					<div class="dropdown">
-
-						<button class="btn btn-light border rounded-pill px-3 dropdown-toggle" data-bs-toggle="dropdown" type="button" aria-expanded="false">
-
-							<i class="bi bi-person-circle"></i>
-
-							{{ app.user.email|e }}
-
-						</button>
-
-						<ul class="dropdown-menu dropdown-menu-end shadow border-0">
-
-							<li>
-								<span class="dropdown-item-text small text-muted">
-									{{ app.user.roles|join(', ')|e }}
-								</span>
-							</li>
-
-							<li>
-								<hr class="dropdown-divider">
-							</li>
-
-							<li>
-
-								<a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
-
-									<i class="bi bi-box-arrow-right"></i>
-
-									Déconnexion
-
-								</a>
-
-							</li>
-
-						</ul>
-
-					</div>
-
-				{% endif %}
-
-			</div>
-
-		</div>
-
-	</nav>
-
-	<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
 	{% set current_route = app.request.attributes.get('_route') %}
-
 	{% set referentiel_open =
-    current_route starts with 'admin_diplome_'
-    or current_route starts with 'admin_etablissement_'
-    or current_route starts with 'admin_regle_equivalence_'
-%}
+		current_route starts with 'admin_diplome_' or
+		current_route starts with 'admin_etablissement_' or
+		current_route starts with 'admin_regle_equivalence_' or
+		current_route starts with 'admin_arrete_'
+	%}
 
-	<aside class="sidebar" id="sidebar">
+	{# ===== TOPBAR ===== #}
+	<header class="topbar" role="banner">
+		<button
+			class="menu-toggle"
+			id="sidebarToggle"
+			type="button"
+			aria-label="Ouvrir le menu de navigation"
+			aria-expanded="false"
+			aria-controls="sidebar"
+		>
+			<i class="bi bi-list" aria-hidden="true"></i>
+		</button>
 
-		<ul class="nav flex-column">
+		<a href="{{ path('equivalence_index') }}" class="brand">
+			<div class="brand-icon" aria-hidden="true">
+				<i class="bi bi-mortarboard-fill"></i>
+			</div>
+			<div>
+				<div>Equivalence SI</div>
+				<div class="brand-sub">Plateforme de gestion</div>
+			</div>
+		</a>
 
-			<li class="sidebar-section-title">
-				Navigation
+		{% if app.user %}
+			{% set email_safe = app.user.email|e %}
+			{# Initiales : premier caractère de la partie locale #}
+			{% set initiales = email_safe|slice(0,1)|upper %}
+
+			<div class="dropdown" style="margin-left:auto;">
+				<button
+					class="user-btn dropdown-toggle"
+					type="button"
+					id="userMenuBtn"
+					data-bs-toggle="dropdown"
+					aria-haspopup="true"
+					aria-expanded="false"
+					aria-label="Menu utilisateur : {{ email_safe }}"
+				>
+					<span class="user-avatar" aria-hidden="true">{{ initiales }}</span>
+					<span class="d-none d-sm-inline">{{ email_safe }}</span>
+					<i class="bi bi-chevron-down" style="font-size:.75rem;opacity:.6;" aria-hidden="true"></i>
+				</button>
+				<ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 mt-2" aria-labelledby="userMenuBtn">
+					<li class="px-3 py-2">
+						<div class="fw-semibold" style="font-size:.88rem;">{{ email_safe }}</div>
+						<small class="text-muted">{{ app.user.roles|join(', ')|e }}</small>
+					</li>
+					<li><hr class="dropdown-divider my-1"></li>
+					<li>
+						<a class="dropdown-item rounded-3 text-danger d-flex align-items-center gap-2" href="{{ path('app_logout') }}">
+							<i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+							Déconnexion
+						</a>
+					</li>
+				</ul>
+			</div>
+		{% endif %}
+	</header>
+
+	<div class="sidebar-overlay" id="sidebarOverlay" role="presentation"></div>
+
+	{# ===== SIDEBAR ===== #}
+	<nav class="sidebar" id="sidebar" aria-label="Navigation principale">
+		<ul class="nav flex-column" role="list">
+
+			<li class="sidebar-section" aria-hidden="true">Navigation</li>
+
+			<li class="nav-item" role="listitem">
+				<a
+					href="{{ path('equivalence_index') }}"
+					class="nav-link {{ current_route == 'equivalence_index' ? 'active' : '' }}"
+					{% if current_route == 'equivalence_index' %}aria-current="page"{% endif %}
+				>
+					<i class="bi bi-speedometer2" aria-hidden="true"></i>
+					Tableau de bord
+				</a>
 			</li>
+
+			{% if is_granted('ROLE_AGENT') %}
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('equivalence_new') }}"
+						class="nav-link {{ current_route == 'equivalence_new' ? 'active' : '' }}"
+						{% if current_route == 'equivalence_new' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-folder-plus" aria-hidden="true"></i>
+						Nouveau dossier
+					</a>
+				</li>
+			{% endif %}
+
 			{% if is_granted('ROLE_CANDIDAT') %}
-				<li class="nav-item">
-					<a class="nav-link" href="{{ path('equivalence_index') }}">Mes dossiers</a>
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('equivalence_index') }}"
+						class="nav-link {{ current_route == 'equivalence_index' ? 'active' : '' }}"
+						{% if current_route == 'equivalence_index' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-folder2-open" aria-hidden="true"></i>
+						Mes dossiers
+					</a>
+				</li>
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('equivalence_new') }}"
+						class="nav-link {{ current_route == 'equivalence_new' ? 'active' : '' }}"
+						{% if current_route == 'equivalence_new' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-folder-plus" aria-hidden="true"></i>
+						Nouveau dossier
+					</a>
 				</li>
 			{% endif %}
 
 			{% if is_granted('ROLE_ETABLISSEMENT') %}
-				<li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Établissement</a>
-					<ul class="dropdown-menu">
-						<li>
-							<a class="dropdown-item" href="{{ path('etablissement_diplome_index') }}">Diplômes proposés</a>
-						</li>
-						<li>
-							<a class="dropdown-item" href="{{ path('etablissement_diplome_obtenu_index') }}">Listes des diplômés</a>
-						</li>
-					</ul>
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('etablissement_diplome_index') }}"
+						class="nav-link {{ current_route starts with 'etablissement_diplome_' ? 'active' : '' }}"
+						{% if current_route starts with 'etablissement_diplome_' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-award" aria-hidden="true"></i>
+						Diplômes proposés
+					</a>
+				</li>
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('etablissement_diplome_obtenu_index') }}"
+						class="nav-link {{ current_route starts with 'etablissement_diplome_obtenu_' ? 'active' : '' }}"
+						{% if current_route starts with 'etablissement_diplome_obtenu_' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-person-check" aria-hidden="true"></i>
+						Diplômés
+					</a>
 				</li>
 			{% endif %}
 
 			{% if is_granted('ROLE_COMMISSION') %}
-				<li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Commission</a>
-					<ul class="dropdown-menu">
-						<li>
-							<a class="dropdown-item" href="{{ path('commission_diplome_index') }}">Valider diplômes</a>
-						</li>
-						<li>
-							<a class="dropdown-item" href="{{ path('commission_dashboard') }}">Dossiers équivalence</a>
-						</li>
-					</ul>
-				</li>
-			{% endif %}
-			<li class="nav-item">
-
-				<a href="{{ path('equivalence_index') }}" class="nav-link {{ current_route == 'equivalence_index' ? 'active' : '' }}">
-
-					<i class="bi bi-speedometer2"></i>
-
-					Tableau de bord
-
-				</a>
-
-			</li>
-
-			{% if is_granted('ROLE_AGENT') %}
-
-				<li class="nav-item">
-
-					<a href="{{ path('equivalence_new') }}" class="nav-link {{ current_route == 'equivalence_new' ? 'active' : '' }}">
-
-						<i class="bi bi-folder-plus"></i>
-
-						Nouveau dossier
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('commission_dashboard') }}"
+						class="nav-link {{ current_route == 'commission_dashboard' ? 'active' : '' }}"
+						{% if current_route == 'commission_dashboard' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-clipboard2-check" aria-hidden="true"></i>
+						Dossiers
 					</a>
-
 				</li>
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('commission_diplome_index') }}"
+						class="nav-link {{ current_route starts with 'commission_diplome_' ? 'active' : '' }}"
+						{% if current_route starts with 'commission_diplome_' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-patch-check" aria-hidden="true"></i>
+						Validation diplômes
+					</a>
+				</li>
 			{% endif %}
 
 			{% if is_granted('ROLE_ADMIN') %}
 
-				<li class="sidebar-section-title">
-					Référentiels
-				</li>
+				<li class="sidebar-section" aria-hidden="true">Référentiels</li>
 
-				<li class="nav-item submenu-wrapper">
-
-					<a class="nav-link submenu-toggle {{ referentiel_open ? 'active' : '' }}" data-bs-toggle="collapse" href="#referentielMenu" role="button" aria-expanded="{{ referentiel_open ? 'true' : 'false' }}" aria-controls="referentielMenu">
-
-						<i class="bi bi-book"></i>
-
-						Diplômes référentiels
-
+				<li class="nav-item submenu-wrapper" role="listitem">
+					<a
+						class="nav-link submenu-toggle {{ referentiel_open ? 'active' : '' }}"
+						data-bs-toggle="collapse"
+						href="#referentielMenu"
+						role="button"
+						aria-expanded="{{ referentiel_open ? 'true' : 'false' }}"
+						aria-controls="referentielMenu"
+					>
+						<i class="bi bi-journal-bookmark" aria-hidden="true"></i>
+						Référentiels diplômes
 					</a>
-
 					<div class="collapse {{ referentiel_open ? 'show' : '' }}" id="referentielMenu">
-
 						<div class="sidebar-submenu">
-
-							<a href="{{ path('admin_diplome_index') }}" class="nav-link {{ current_route starts with 'admin_diplome_' ? 'active' : '' }}">
-
-								<i class="bi bi-award"></i>
-
+							<a
+								href="{{ path('admin_diplome_index') }}"
+								class="nav-link {{ current_route starts with 'admin_diplome_' ? 'active' : '' }}"
+								{% if current_route starts with 'admin_diplome_' %}aria-current="page"{% endif %}
+							>
+								<i class="bi bi-award" aria-hidden="true"></i>
 								Diplômes
-
 							</a>
-
-							<a href="{{ path('admin_regle_equivalence_index') }}" class="nav-link {{ current_route starts with 'admin_regle_equivalence_' ? 'active' : '' }}">
-
-								<i class="bi bi-calendar-range"></i>
-
+							<a
+								href="{{ path('admin_regle_equivalence_index') }}"
+								class="nav-link {{ current_route starts with 'admin_regle_equivalence_' ? 'active' : '' }}"
+								{% if current_route starts with 'admin_regle_equivalence_' %}aria-current="page"{% endif %}
+							>
+								<i class="bi bi-diagram-3" aria-hidden="true"></i>
 								Règles d'équivalence
-
 							</a>
-
-							<a href="{{ path('admin_etablissement_index') }}" class="nav-link {{ current_route starts with 'admin_etablissement_' ? 'active' : '' }}">
-
-								<i class="bi bi-building"></i>
-
+							<a
+								href="{{ path('admin_etablissement_index') }}"
+								class="nav-link {{ current_route starts with 'admin_etablissement_' ? 'active' : '' }}"
+								{% if current_route starts with 'admin_etablissement_' %}aria-current="page"{% endif %}
+							>
+								<i class="bi bi-building" aria-hidden="true"></i>
 								Établissements
-
 							</a>
-
+							<a
+								href="{{ path('admin_arrete_index') }}"
+								class="nav-link {{ current_route starts with 'admin_arrete_' ? 'active' : '' }}"
+								{% if current_route starts with 'admin_arrete_' %}aria-current="page"{% endif %}
+							>
+								<i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+								Arrêtés
+							</a>
 						</div>
-
 					</div>
-
 				</li>
 
-			{% endif %}
+				<li class="sidebar-section" aria-hidden="true">Administration</li>
 
-			{% if is_granted('ROLE_COMMISSION') %}
-
-				<li class="sidebar-section-title">
-					Commission
-				</li>
-
-				<li class="nav-item">
-
-					<a href="{{ path('commission_dashboard') }}" class="nav-link {{ current_route starts with 'commission_' ? 'active' : '' }}">
-
-						<i class="bi bi-people"></i>
-
-						Commission
-
-					</a>
-
-				</li>
-
-			{% endif %}
-			{% if is_granted('ROLE_ADMIN') %}
-				<li class="nav-item">
-					<a href="{{ path('admin_arrete_index') }}" class="nav-link {{ current_route starts with 'admin_arrete_' ? 'active' : '' }}">
-						<i class="bi bi-file-text"></i>
-						Arrêtés
-					</a>
-				</li>
-			{% endif %}
-
-			{% if is_granted('ROLE_ADMIN') %}
-
-				<li class="sidebar-section-title">
-					Administration
-				</li>
-
-				<li class="nav-item">
-
-					<a href="{{ path('admin_dashboard') }}" class="nav-link {{ current_route == 'admin_dashboard' ? 'active' : '' }}">
-
-						<i class="bi bi-shield-lock"></i>
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('admin_dashboard') }}"
+						class="nav-link {{ current_route == 'admin_dashboard' ? 'active' : '' }}"
+						{% if current_route == 'admin_dashboard' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-shield-lock" aria-hidden="true"></i>
 						Administration
-
 					</a>
-
 				</li>
-
-				<li class="nav-item">
-
-					<a href="{{ path('admin_users') }}" class="nav-link {{ current_route == 'admin_users' ? 'active' : '' }}">
-
-						<i class="bi bi-people-fill"></i>
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('admin_users') }}"
+						class="nav-link {{ current_route == 'admin_users' ? 'active' : '' }}"
+						{% if current_route == 'admin_users' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-people-fill" aria-hidden="true"></i>
 						Utilisateurs
-
 					</a>
-
 				</li>
-
-				<li class="nav-item">
-
-					<a href="{{ path('admin_statistics') }}" class="nav-link {{ current_route == 'admin_statistics' ? 'active' : '' }}">
-
-						<i class="bi bi-bar-chart"></i>
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('admin_statistics') }}"
+						class="nav-link {{ current_route == 'admin_statistics' ? 'active' : '' }}"
+						{% if current_route == 'admin_statistics' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-bar-chart-line" aria-hidden="true"></i>
 						Statistiques
-
 					</a>
-
 				</li>
-
-				<li class="nav-item">
-
-					<a href="{{ path('admin_logs') }}" class="nav-link {{ current_route == 'admin_logs' ? 'active' : '' }}">
-
-						<i class="bi bi-clock-history"></i>
-
+				<li class="nav-item" role="listitem">
+					<a
+						href="{{ path('admin_logs') }}"
+						class="nav-link {{ current_route == 'admin_logs' ? 'active' : '' }}"
+						{% if current_route == 'admin_logs' %}aria-current="page"{% endif %}
+					>
+						<i class="bi bi-clock-history" aria-hidden="true"></i>
 						Journal système
-
 					</a>
-
 				</li>
 
-			{% endif %}
-
+			{% endif %}{# /ROLE_ADMIN #}
 		</ul>
+	</nav>
 
-	</aside>
+	{# ===== CONTENU PRINCIPAL ===== #}
+	<main class="main-content" id="main-content" tabindex="-1">
 
-	<main class="main-content">
-
+		{# Flash messages #}
 		{% for label, messages in app.flashes %}
-
 			{% for message in messages %}
-
-				<div class="alert alert-{{ label|e }} alert-dismissible fade show custom-alert">
-
-					{{ message|e }}
-
-					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-
+				<div class="alert alert-{{ label|e }} alert-dismissible fade show flash-wrap mb-3" role="alert">
+					<div class="d-flex align-items-center gap-2">
+						{% if label == 'success' %}
+							<i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+						{% elseif label == 'danger' or label == 'error' %}
+							<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+						{% elseif label == 'warning' %}
+							<i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+						{% else %}
+							<i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+						{% endif %}
+						<span class="flex-grow-1">{{ message|e }}</span>
+						<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer le message"></button>
+					</div>
 				</div>
-
 			{% endfor %}
-
 		{% endfor %}
 
 		{% block body %}{% endblock %}
-
 	</main>
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
 	<script>
-		(() => {
+	'use strict';
+	(function () {
+		const sidebar  = document.getElementById('sidebar');
+		const toggle   = document.getElementById('sidebarToggle');
+		const overlay  = document.getElementById('sidebarOverlay');
+		const BREAKPOINT = 992;
 
-'use strict';
+		if (!sidebar) return;
 
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
-const overlay = document.getElementById('sidebarOverlay');
+		function openSidebar() {
+			sidebar.classList.add('open');
+			overlay.classList.add('show');
+			if (toggle) {
+				toggle.setAttribute('aria-expanded', 'true');
+				toggle.setAttribute('aria-label', 'Fermer le menu de navigation');
+			}
+			// Accessibilité : focus dans la sidebar
+			const firstLink = sidebar.querySelector('a, button');
+			if (firstLink) firstLink.focus();
+		}
 
-function closeSidebar() {
-sidebar.classList.remove('open');
-overlay.classList.remove('show');
-}
+		function closeSidebar() {
+			sidebar.classList.remove('open');
+			overlay.classList.remove('show');
+			if (toggle) {
+				toggle.setAttribute('aria-expanded', 'false');
+				toggle.setAttribute('aria-label', 'Ouvrir le menu de navigation');
+				toggle.focus();
+			}
+		}
 
-function openSidebar() {
-sidebar.classList.add('open');
-overlay.classList.add('show');
-}
+		if (toggle)  toggle.addEventListener('click', function () {
+			sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+		});
 
-if (sidebarToggle) {
+		if (overlay) overlay.addEventListener('click', closeSidebar);
 
-sidebarToggle.addEventListener('click', () => {
+		// Fermeture sur Échap
+		document.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+		});
 
-if (sidebar.classList.contains('open')) {
-closeSidebar();
-} else {
-openSidebar();
-}
+		// Fermeture auto sur clic de lien (mobile)
+		sidebar.querySelectorAll('a:not([data-bs-toggle])').forEach(function (link) {
+			link.addEventListener('click', function () {
+				if (window.innerWidth < BREAKPOINT) closeSidebar();
+			});
+		});
 
-});
-
-}
-
-if (overlay) {
-overlay.addEventListener('click', closeSidebar);
-}
-
-document.querySelectorAll('.sidebar a').forEach(link => {
-
-link.addEventListener('click', () => {
-
-if (window.innerWidth <= 991) {
-closeSidebar();
-}
-
-});
-
-});
-
-})();
+		// Réinitialisation au redimensionnement vers desktop
+		window.addEventListener('resize', function () {
+			if (window.innerWidth >= BREAKPOINT) {
+				sidebar.classList.remove('open');
+				overlay.classList.remove('show');
+				if (toggle) toggle.setAttribute('aria-expanded', 'false');
+			}
+		});
+	})();
 	</script>
-
 	{% block javascripts %}{% endblock %}
-
-</body></html>
+</body>
+</html>
