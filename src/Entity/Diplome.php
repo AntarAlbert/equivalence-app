@@ -93,6 +93,20 @@ class Diplome
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $organisme = null;
+
+    public function getOrganisme(): ?string
+    {
+        return $this->organisme;
+    }
+
+    public function setOrganisme(?string $organisme): self
+    {
+        $this->organisme = $organisme ? trim($organisme) : null;
+        return $this;
+    }
+
     // ========== CONSTRUCTEUR ==========
     public function __construct()
     {

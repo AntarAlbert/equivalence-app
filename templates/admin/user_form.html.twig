@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ user.id is defined ? 'Modifier l\'utilisateur' : 'Créer un utilisateur' }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="card shadow-sm rounded-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h4 mb-0">
+                {{ user.id is defined ? 'Modifier l\'utilisateur' : 'Créer un utilisateur' }}
+            </h2>
+        </div>
+        <div class="card-body">
+            {% if form is not defined and userForm is defined %}
+                {% set form = userForm %}
+            {% endif %}
+
+            {% if form is not defined %}
+                <div class="alert alert-danger">
+                    Erreur technique : le formulaire n'a pas été transmis au template.
+                </div>
+            {% else %}
+                {{ form_start(form, {attr: {novalidate: 'novalidate', class: 'needs-validation'}}) }}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        {{ form_row(form.email, {attr: {class: 'form-control', placeholder: 'email@exemple.com'}}) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.fullName, {attr: {class: 'form-control', placeholder: 'Nom complet'}}) }}
+                    </div>
+                    <div class="col-md-12">
+                        {{ form_row(form.roles, {attr: {class: 'form-select'}}) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.plainPassword, {attr: {class: 'form-control', placeholder: 'Laisser vide pour ne pas changer'}}) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.etablissement, {attr: {class: 'form-select'}}) }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Enregistrer
+                    </button>
+                    <a href="{{ path('admin_user_index') }}" class="btn btn-secondary">
+                        Annuler
+                    </a>
+                </div>
+
+                {{ form_end(form) }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

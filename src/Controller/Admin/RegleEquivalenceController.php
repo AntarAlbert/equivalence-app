@@ -29,53 +29,6 @@ class RegleEquivalenceController extends AbstractController
         ]);
     }
 
-   #[Route('/new/{diplome?}', name: 'admin_regle_equivalence_new', methods: ['GET', 'POST'])]
-public function new(Request $request, ?Diplome $diplome, EntityManagerInterface $em, RegleEquivalenceRepository $repo, LoggerInterface $logger): Response
-{
-    $regle = new RegleEquivalence();
-    if ($diplome) {
-        $regle->setDiplome($diplome);
-    }
-    $form = $this->createForm(RegleEquivalenceType::class, $regle);
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        $diplome = $regle->getDiplome();
-        $debut = $regle->getDateDebut();
-        $fin   = $regle->getDateFin();
-
-        // Vérifier chevauchement
-        if ($repo->hasOverlap($diplome, $debut, $fin)) {
-            $this->addFlash('danger', 'Une autre règle existe déjà sur cette période pour ce diplôme.');
-            return $this->renderForm($form);
-        }
-
-        // Si la règle est active, désactiver l'ancienne
-        if ($regle->isActif()) {
-            $activeRule = $repo->findActiveRule($diplome, $debut);
-            if ($activeRule && $activeRule !== $regle) {
-                $activeRule->setActif(false);
-            }
-        }
-
-        try {
-            $em->persist($regle);
-            $em->flush();
-            $logger->info('Règle d’équivalence créée', [
-                'diplome' => $diplome->getId(),
-                'user' => $this->getUser()->getUserIdentifier(),
-            ]);
-            $this->addFlash('success', 'Règle créée avec succès.');
-            return $this->redirectToRoute('admin_regle_equivalence_index');
-        } catch (\Exception $e) {
-            $logger->error('Erreur création règle', ['error' => $e->getMessage()]);
-            $this->addFlash('danger', 'Erreur technique lors de la création.');
-        }
-    }
-
-    return $this->renderForm($form);
-}
-
     #[Route('/{id}/edit', name: 'admin_regle_equivalence_edit', methods: ['GET', 'POST'])]
     public function edit(
         RegleEquivalence $regle,
@@ -148,4 +101,24 @@ public function new(Request $request, ?Diplome $diplome, EntityManagerInterface 
             'regle' => $regle,
         ]);
     }
+    public function new(?Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
+{
+    $regle = new RegleEquivalence();
+    if ($diplome) $regle->setDiplome($diplome);
+    $form = $this->createForm(RegleEquivalenceType::class, $regle);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $manager->save($regle);
+        $this->addFlash('success', 'Règle créée.');
+        return $this->redirectToRoute('admin_regle_equivalence_index');
+    }
+
+    return $this->render('regle_equivalence/form.html.twig', [
+        'form' => $form->createView(),
+        'diplome' => $diplome,
+        'isEdit' => false,
+        'cancel_path' => $this->generateUrl('admin_regle_equivalence_index'),
+    ]);
+}
 }

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Diplome;
+use App\Entity\RegleEquivalence;
 use App\Form\RegleEquivalenceType;
 use App\Repository\DiplomeRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -68,25 +69,25 @@ class CommissionDiplomeController extends AbstractController
         return $this->redirectToRoute('commission_diplome_index');
     }
 
-    #[Route('/{id}/regle/new', name: 'commission_regle_new', methods: ['GET', 'POST'])]
-    public function newRegle(Diplome $diplome, Request $request, EntityManagerInterface $em): Response
-    {
-        $regle = new \App\Entity\RegleEquivalence();
-        $regle->setDiplome($diplome);
 
+    public function newRegle(Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
+    {
+        $regle = new RegleEquivalence();
+        $regle->setDiplome($diplome);
         $form = $this->createForm(RegleEquivalenceType::class, $regle);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $em->persist($regle);
-            $em->flush();
-            $this->addFlash('success', 'Règle d’équivalence créée.');
+            $manager->save($regle);
+            $this->addFlash('success', 'Règle créée.');
             return $this->redirectToRoute('commission_diplome_index');
         }
 
-        return $this->render('commission/regle_form.html.twig', [
+        return $this->render('regle_equivalence/form.html.twig', [
             'form' => $form->createView(),
             'diplome' => $diplome,
+            'isEdit' => false,
+            'cancel_path' => $this->generateUrl('commission_diplome_index'),
         ]);
     }
 }

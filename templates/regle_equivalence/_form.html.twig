@@ -1,0 +1,11 @@
+{{ form_start(form) }}
+    {{ form_row(form.diplome) }}
+    {{ form_row(form.classement) }}
+    {{ form_row(form.dateDebut) }}
+    {{ form_row(form.dateFin) }}
+    {{ form_row(form.commentaire) }}
+    {{ form_row(form.actif) }}
+
+    <button class="btn btn-primary">{{ button_label|default('Enregistrer') }}</button>
+    <a href="{{ cancel_path }}" class="btn btn-secondary">Annuler</a>
+{{ form_end(form) }}

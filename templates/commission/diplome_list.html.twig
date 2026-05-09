@@ -10,7 +10,7 @@
         <thead>
             <tr>
                 <th>Titre</th>
-                <th>Établissement</th>
+                <th>Établissement source</th>
                 <th>Proposé par</th>
                 <th>Actions</th>
             </tr>
@@ -20,7 +20,13 @@
                 <tr>
                     <td>{{ diplome.titre }}</td>
                     <td>{{ diplome.etablissementSource ? diplome.etablissementSource.nom : '—' }}</td>
-                    <td>{{ diplome.proposedBy.email }}</td>
+                    <td>
+                        {% if diplome.proposedBy %}
+                            {{ diplome.proposedBy.email }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <form method="post" action="{{ path('commission_diplome_approve', {id: diplome.id}) }}" style="display:inline-block">
                             <input type="hidden" name="_token" value="{{ csrf_token('approve_diplome_' ~ diplome.id) }}">
@@ -34,7 +40,9 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="4" class="text-center">Aucun diplôme en attente.</td></tr>
+                <tr>
+                    <td colspan="4" class="text-center">Aucun diplôme en attente.</td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
