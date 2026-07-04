@@ -1,226 +1,93 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}
-    Modifier le dossier {{ equivalence.numeroDossier }}
-{% endblock %}
+{% block title %}Modifier le dossier {{ equivalence.numeroDossier }}{% endblock %}
 
 {% block body %}
 <div class="container-fluid py-4">
-
-    {# ===================== ENTÊTE ===================== #}
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-
-            <h1 class="h2 fw-bold text-primary mb-1">
-                <i class="bi bi-pencil-square me-2"></i>
-                Modification du dossier
-            </h1>
-
+            <h1 class="h2 fw-bold text-primary mb-1"><i class="bi bi-pencil-square me-2"></i>Modification du dossier</h1>
             <p class="text-muted mb-0">
-
-                Dossier n°
-                <strong>{{ equivalence.numeroDossier|e }}</strong>
-
-                <span class="mx-2">•</span>
-
-                Statut :
-
-                <span class="badge bg-{{ {
-                    'draft': 'secondary',
-                    'submitted': 'primary',
-                    'in_review': 'warning',
-                    'in_committee': 'info',
-                    'approved': 'success',
-                    'rejected': 'danger'
-                }[equivalence.status]|default('secondary') }}
-                rounded-pill px-3 py-2">
-
-                    {{ equivalence.status
-                        |replace({'_': ' '})
-                        |title
-                        |e }}
-
+                Dossier n°<strong>{{ equivalence.numeroDossier|e }}</strong> •
+                Statut : <span class="badge bg-{{ {
+                    'draft': 'secondary', 'submitted': 'primary',
+                    'in_review': 'warning', 'in_committee': 'info',
+                    'approved': 'success', 'rejected': 'danger'
+                }[equivalence.status]|default('secondary') }} rounded-pill px-3 py-2">
+                    {{ equivalence.status|replace({'_': ' '})|title|e }}
                 </span>
-
             </p>
-
         </div>
-
-        <div>
-
-            <a href="{{ path('equivalence_show', {
-                id: equivalence.id
-            }) }}"
-               class="btn btn-outline-secondary rounded-pill px-4">
-
-                <i class="bi bi-arrow-left-circle me-1"></i>
-                Retour au dossier
-
-            </a>
-
-        </div>
-
+        <a href="{{ path('equivalence_show', { id: equivalence.id }) }}" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="bi bi-arrow-left-circle me-1"></i>Retour au dossier
+        </a>
     </div>
 
-    {# ===================== FORMULAIRE ===================== #}
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-
         <div class="card-header bg-primary text-white py-3">
-
-            <h2 class="h5 mb-0">
-                <i class="bi bi-pencil-square me-2"></i>
-                Modification des informations du dossier
-            </h2>
-
+            <h2 class="h5 mb-0"><i class="bi bi-pencil-square me-2"></i>Modification des informations</h2>
         </div>
-
         <div class="card-body p-4">
-
             {{ include('equivalence/_form.html.twig', {
                 button_label: 'Mettre à jour le dossier',
-                cancel_path: path('equivalence_show', {
-                    id: equivalence.id
-                }),
+                cancel_path: path('equivalence_show', { id: equivalence.id }),
                 equivalence: equivalence
             }) }}
-
         </div>
-
     </div>
-
 </div>
 {% endblock %}
 
 {% block javascripts %}
-    {{ parent() }}
-
+{{ parent() }}
+{# Même script que new.html.twig #}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-
-    // =====================================================
-    // HYDRATATION UNIVERSITÉ / PAYS
-    // =====================================================
-
-    const diplomaSelect = document.getElementById('equivalence_diplomeReference');
-    const universiteField = document.getElementById('equivalence_universite');
-    const paysField = document.getElementById('equivalence_pays');
-
-    if (diplomaSelect && universiteField && paysField) {
-
-        const updateFields = () => {
-
-            const selectedOption =
-                diplomaSelect.options[diplomaSelect.selectedIndex];
-
-            universiteField.value =
-                selectedOption?.dataset.organisme || '';
-
-            paysField.value =
-                selectedOption?.dataset.pays || '';
-        };
-
-        diplomaSelect.addEventListener('change', updateFields);
-
-        updateFields();
-    }
-
-    // =====================================================
-    // MASQUE CNI
-    // =====================================================
-
-    const cniInput =
-        document.querySelector('[data-mask="cni"]');
-
-    if (cniInput) {
-
-        const formatCni = (value) => {
-
-            let cleaned =
-                value.replace(/\D/g, '').substring(0, 12);
-
-            return cleaned.replace(/(\d{3})(?=\d)/g, '$1 ');
-        };
-
-        cniInput.addEventListener('input', (e) => {
-            e.target.value = formatCni(e.target.value);
-        });
-
-        cniInput.value = formatCni(cniInput.value);
-
-        const form = cniInput.closest('form');
-
-        if (form) {
-
-            form.addEventListener('submit', () => {
-                cniInput.value =
-                    cniInput.value.replace(/\s+/g, '');
-            });
-
-        }
-    }
-
-    // =====================================================
-    // SECTION CNI MAJEUR
-    // =====================================================
-
-    const birthdateInput =
-        document.getElementById('equivalence_dateNaissance');
-
-    const cinDetailSection =
-        document.getElementById('cin-detail-section');
-
-    function calculateAge(birthDate) {
-
-        const today = new Date();
-
-        let age =
-            today.getFullYear() - birthDate.getFullYear();
-
-        const m =
-            today.getMonth() - birthDate.getMonth();
-
-        if (
-            m < 0 ||
-            (m === 0 &&
-            today.getDate() < birthDate.getDate())
-        ) {
-            age--;
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectDiplome = document.getElementById('equivalence_diplomeReference');
+        const universite = document.getElementById('equivalence_universite');
+        const pays = document.getElementById('equivalence_pays');
+        if (selectDiplome && universite && pays) {
+            const update = () => {
+                const opt = selectDiplome.options[selectDiplome.selectedIndex];
+                universite.value = opt?.dataset?.organisme || '';
+                pays.value = opt?.dataset?.pays || '';
+            };
+            selectDiplome.addEventListener('change', update);
+            update();
         }
 
-        return age;
-    }
-
-    function toggleDetailSection() {
-
-        if (!cinDetailSection) return;
-
-        if (birthdateInput && birthdateInput.value) {
-
-            const birthDate =
-                new Date(birthdateInput.value);
-
-            const age = calculateAge(birthDate);
-
-            cinDetailSection.style.display =
-                age >= 18 ? 'block' : 'none';
-
-        } else {
-
-            cinDetailSection.style.display = 'none';
+        const cni = document.querySelector('[data-mask="cni"]');
+        if (cni) {
+            const format = v => v.replace(/\D/g, '').slice(0,12).replace(/(\d{3})(?=\d)/g, '$1 ');
+            cni.addEventListener('input', e => e.target.value = format(e.target.value));
+            cni.value = format(cni.value);
+            cni.closest('form')?.addEventListener('submit', () => cni.value = cni.value.replace(/\s/g, ''));
         }
-    }
 
-    if (birthdateInput) {
+        const dateNaiss = document.getElementById('equivalence_dateNaissance');
+        const cinDiv = document.getElementById('cin-detail-section');
+        if (dateNaiss && cinDiv) {
+            const age = birth => { let now = new Date(); let a = now.getFullYear() - birth.getFullYear(); let m = now.getMonth() - birth.getMonth(); if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) a--; return a; };
+            const toggle = () => {
+                if (dateNaiss.value) {
+                    let birth = new Date(dateNaiss.value);
+                    cinDiv.style.display = age(birth) >= 18 ? 'block' : 'none';
+                } else cinDiv.style.display = 'none';
+            };
+            dateNaiss.addEventListener('change', toggle);
+            toggle();
+        }
 
-        birthdateInput.addEventListener(
-            'change',
-            toggleDetailSection
-        );
-
-        toggleDetailSection();
-    }
-
-});
+        const emploi = document.getElementById('equivalence_emploi');
+        const matriculeField = document.getElementById('matricule-field');
+        if (emploi && matriculeField) {
+            const toggleMatricule = () => {
+                matriculeField.style.display = emploi.value === 'fonctionnaire' ? 'block' : 'none';
+                if (emploi.value !== 'fonctionnaire') matriculeField.querySelector('input').value = '';
+            };
+            emploi.addEventListener('change', toggleMatricule);
+            toggleMatricule();
+        }
+    });
 </script>
 {% endblock %}

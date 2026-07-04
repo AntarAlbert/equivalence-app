@@ -1,5 +1,4 @@
 <?php
-// src/Form/EquivalenceType.php
 
 namespace App\Form;
 
@@ -9,163 +8,209 @@ use App\Entity\Pays;
 use App\Repository\DiplomeRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class EquivalenceType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            // ==================== IDENTITÉ ====================
             ->add('nom', TextType::class, [
                 'label' => 'Nom',
-                'attr' => ['placeholder' => 'Nom du candidat'],
+                'attr' => ['placeholder' => 'Nom du candidat', 'class' => 'form-control text-uppercase', 'autocomplete' => 'family-name'],
             ])
             ->add('prenom', TextType::class, [
                 'label' => 'Prénom',
-                'attr' => ['placeholder' => 'Prénom du candidat'],
+                'attr' => ['placeholder' => 'Prénom du candidat', 'class' => 'form-control', 'autocomplete' => 'given-name'],
             ])
+            ->add('dateNaissance', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'Date de naissance',
+                'required' => true,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('lieuNaissance', TextType::class, [
+                'label' => 'Lieu de naissance',
+                'required' => false,
+                'attr' => ['placeholder' => 'Ville et pays de naissance', 'class' => 'form-control'],
+            ])
+
+            // ==================== COORDONNÉES & NATIONALITÉ ====================
             ->add('email', TextType::class, [
                 'label' => 'Adresse email',
                 'required' => true,
-                'attr' => ['placeholder' => 'exemple@domaine.com', 'autocomplete' => 'email'],
+                'attr' => ['class' => 'form-control', 'autocomplete' => 'email'],
             ])
             ->add('nationalite', EntityType::class, [
                 'class' => Pays::class,
                 'choice_label' => 'nomFrFr',
                 'placeholder' => 'Sélectionnez la nationalité',
                 'label' => 'Nationalité',
+                'required' => true,
+                'attr' => ['class' => 'form-select'],
+            ])
+->add('cni', TextType::class, [
+    'label' => 'Numéro CNI',
+    'required' => false,
+    'constraints' => [
+        new Assert\Length([
+            'min' => 12,
+            'max' => 12,
+            'exactMessage' => 'Le numéro CNI doit contenir exactement 12 chiffres.',
+        ]),
+        new Assert\Regex([
+            'pattern' => '/^\d{12}$/',
+            'message' => 'Le numéro CNI ne doit contenir que des chiffres (12 chiffres).',
+        ]),
+    ],
+    'attr' => [
+        'class' => 'form-control',
+        'placeholder' => '123456789012',
+        'maxlength' => 15,           // pour l’affichage avec espaces (12 chiffres + 3 espaces)
+        'data-mask' => 'cni',        // déjà présent
+    ],
+])
+            ->add('cniDateDelivrance', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'Date de délivrance du CNI',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('cniLieuDelivrance', TextType::class, [
+                'label' => 'Lieu de délivrance du CNI',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('cniDateDuplicata', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'Date du duplicata',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('cniLieuDuplicata', TextType::class, [
+                'label' => 'Lieu de délivrance du duplicata',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+
+            // ==================== EMPLOI ====================
+            ->add('emploi', ChoiceType::class, [
+                'label' => 'Situation professionnelle',
+                'placeholder' => 'Sélectionnez une option',
+                'choices' => [
+                    'Chômeur'       => 'chomeur',
+                    'Dans le privé' => 'prive',
+                    'Fonctionnaire' => 'fonctionnaire',
+                ],
                 'required' => false,
                 'attr' => ['class' => 'form-select'],
             ])
-            ->add('diplomeReference', EntityType::class, [
-                'class' => Diplome::class,
-                'query_builder' => function (DiplomeRepository $repo) {
-                    return $repo->createQueryBuilder('d')
-                        ->leftJoin('d.etablissement', 'e')
-                        ->leftJoin('e.pays', 'p')
-                        ->addSelect('e', 'p');
-                },
-                'choice_label' => function (?Diplome $diplome): string {
-                    if (!$diplome) {
-                        return '';
-                    }
-                    $titre = $diplome->getTitre();
-                    $etablissement = $diplome->getEtablissement();
-                    $nomEtab = $etablissement ? $etablissement->getNom() : 'Établissement inconnu';
-                    $pays = $etablissement && $etablissement->getPays() ? $etablissement->getPays()->getNomFrFr() : '';
-                    return sprintf('%s - %s%s', $titre, $nomEtab, $pays ? " ($pays)" : '');
-                },
-                'placeholder' => 'Choisissez un diplôme',
-                'label' => 'Diplôme de référence',
-                'required' => true,
-                'choice_attr' => function (?Diplome $diplome): array {
-                    if (!$diplome) {
-                        return [];
-                    }
-                    $etablissement = $diplome->getEtablissement();
-                    $organisme = $etablissement ? $etablissement->getNom() : ($diplome->getOrganisme() ?? '');
-                    $paysObj = $etablissement?->getPays();
-                    $pays = $paysObj ? $paysObj->getNomFrFr() : '';
-                    return [
-                        'data-organisme' => $organisme,
-                        'data-pays'      => $pays,
-                    ];
-                },
+            ->add('matricule', TextType::class, [
+                'label' => 'Matricule',
+                'required' => false,
+                'attr' => ['placeholder' => 'Matricule agent (facultatif)', 'class' => 'form-control'],
             ])
+
+            // ==================== DIPLÔME ====================
+           // ==================== DIPLÔME ====================
+->add('diplomeReference', EntityType::class, [
+    'class' => Diplome::class,
+    'query_builder' => function (DiplomeRepository $repo) {
+        return $repo->createQueryBuilder('d')
+            ->leftJoin('d.etablissement', 'e')
+            ->leftJoin('e.pays', 'p')
+            ->addSelect('e', 'p')
+            ->orderBy('d.titre', 'ASC');
+    },
+    'choice_label' => function (?Diplome $diplome): string {
+        if (!$diplome) return '';
+        $etab = $diplome->getEtablissement();
+        $pays = $etab?->getPays()?->getNomFrFr();
+        return sprintf(
+            '%s - %s%s',
+            $diplome->getTitre(),
+            $etab?->getNom() ?? 'Établissement inconnu',
+            $pays ? " ($pays)" : ''
+        );
+    },
+    'placeholder' => 'Choisissez un diplôme',
+    'label' => 'Diplôme de référence',
+    'required' => true,
+    'attr' => ['class' => 'form-select'],
+
+    // === AJOUT IMPORTANT POUR LE REMPLISSAGE AUTOMATIQUE ===
+    'choice_attr' => function (?Diplome $diplome) {
+        if (!$diplome) {
+            return [];
+        }
+
+        $organisme = '';
+        $pays = '';
+
+        if ($etablissement = $diplome->getEtablissement()) {
+            $organisme = $etablissement->getNom() ?? '';
+            if ($etablissement->getPays()) {
+                $pays = $etablissement->getPays()->getNomFrFr() ?? '';
+            }
+        }
+
+        return [
+            'data-organisme' => $organisme,
+            'data-pays'      => $pays,
+        ];
+    },
+])
             ->add('universite', TextType::class, [
                 'mapped' => false,
                 'required' => false,
-                'attr' => ['readonly' => true, 'class' => 'form-control-plaintext'],
                 'label' => 'Université / Organisme',
+                'attr' => ['readonly' => true, 'class' => 'form-control bg-light'],
             ])
             ->add('pays', TextType::class, [
                 'mapped' => false,
                 'required' => false,
-                'attr' => ['readonly' => true],
-                'label' => 'Pays du diplôme',
+                'label' => 'Pays',
+                'attr' => ['readonly' => true, 'class' => 'form-control bg-light'],
             ])
+
+            // ==================== OBSERVATIONS ====================
             ->add('observation', TextareaType::class, [
+                'label' => 'Observations complémentaires',
                 'required' => false,
-                'label' => 'Observations',
-                'attr' => ['rows' => 6, 'placeholder' => 'Observations complémentaires...'],
+                'attr' => ['rows' => 5, 'class' => 'form-control'],
             ])
+
+            // ==================== DOCUMENTS ====================
             ->add('diplomaFile', FileType::class, [
                 'mapped' => false,
                 'required' => true,
-                'constraints' => [new File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
                 'label' => 'Diplôme scanné (PDF)',
+                'constraints' => [new Assert\File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
+                'attr' => ['class' => 'form-control', 'accept' => 'application/pdf'],
             ])
             ->add('transcriptFile', FileType::class, [
                 'mapped' => false,
                 'required' => true,
-                'constraints' => [new File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
-                'label' => 'Relevés de notes (PDF)',
+                'label' => 'Relevé de notes (PDF)',
+                'constraints' => [new Assert\File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
+                'attr' => ['class' => 'form-control', 'accept' => 'application/pdf'],
             ])
             ->add('identityFile', FileType::class, [
                 'mapped' => false,
                 'required' => true,
-                'constraints' => [new File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
                 'label' => 'Pièce d\'identité (PDF)',
+                'constraints' => [new Assert\File(['maxSize' => '6M', 'mimeTypes' => ['application/pdf']])],
+                'attr' => ['class' => 'form-control', 'accept' => 'application/pdf'],
             ])
-            ->add('dateNaissance', DateType::class, [
-                'widget' => 'single_text',
-                'required' => false,
-                'label' => 'Date de naissance',
-                'attr' => ['class' => 'form-control'],
-            ])
-            ->add('cni', TextType::class, [
-            'label' => 'Numéro CNI',
-            'required' => false,
-            'constraints' => [
-                new Length([
-                    'min' => 12,
-                    'max' => 12,
-                    'exactMessage' => 'Le numéro CNI doit contenir exactement 12 chiffres.',
-                ]),
-                new Regex([
-                    'pattern' => '/^\d{12}$/',
-                    'message' => 'Le numéro CNI ne doit contenir que des chiffres (12 chiffres).',
-                ]),
-            ],
-            'attr' => [
-                'class' => 'form-control',
-                'placeholder' => 'ex: 123456789012',
-                'maxlength' => 12,
-                'pattern' => '\d{12}',      // validation HTML5 : uniquement 12 chiffres
-                'title' => '12 chiffres (0-9)',
-                'inputmode' => 'numeric',
-            ],
-        ])
-        ->add('cniDateDelivrance', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'Date de délivrance du CNI',
-            'required' => false,
-            'attr' => ['class' => 'form-control', 'data-cin-field' => 'cni-date']
-        ])
-        ->add('cniLieuDelivrance', TextType::class, [
-            'label' => 'Lieu de délivrance du CNI',
-            'required' => false,
-            'attr' => ['class' => 'form-control', 'data-cin-field' => 'cni-lieu']
-        ])
-        ->add('cniDateDuplicata', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'Date du duplicata (si renouvellement)',
-            'required' => false,
-            'attr' => ['class' => 'form-control', 'data-cin-field' => 'cni-duplicata-date']
-        ])
-        ->add('cniLieuDuplicata', TextType::class, [
-            'label' => 'Lieu du duplicata',
-            'required' => false,
-            'attr' => ['class' => 'form-control', 'data-cin-field' => 'cni-duplicata-lieu']
-        ]);
+        ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

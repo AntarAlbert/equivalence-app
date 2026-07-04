@@ -1,3 +1,5 @@
+{# templates/equivalence/new.html.twig #}
+
 {% extends 'base.html.twig' %}
 
 {% block title %}
@@ -5,183 +7,178 @@
 {% endblock %}
 
 {% block body %}
+
 <div class="container-fluid py-4">
 
-    {# ===================== ENTÊTE ===================== #}
+    {# =========================================================
+           HEADER
+        ========================================================== #}
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
 
         <div>
-            <h1 class="h2 fw-bold text-primary mb-1">
+            <h1 class="h3 fw-bold text-primary mb-1">
                 <i class="bi bi-folder-plus me-2"></i>
-                Nouveau dossier d'équivalence
+                Nouveau dossier
             </h1>
-
             <p class="text-muted mb-0">
-                Création sécurisée d'une demande d’équivalence académique.
+                Demande d’équivalence de diplôme
             </p>
         </div>
 
         <div>
-            <a href="{{ path('equivalence_index') }}"
-               class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="bi bi-arrow-left-circle me-1"></i>
+            <a href="{{ path('equivalence_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-2"></i>
                 Retour à la liste
             </a>
         </div>
 
     </div>
 
-    {# ===================== FORMULAIRE ===================== #}
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    {# =========================================================
+           FORM CARD
+        ========================================================== #}
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
 
-        <div class="card-header bg-primary text-white py-3">
-            <h2 class="h5 mb-0">
-                <i class="bi bi-person-vcard me-2"></i>
-                Informations du dossier
-            </h2>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+                {# Card Header #}
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="icon-circle bg-primary-subtle text-primary">
+                            <i class="bi bi-person-vcard fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Formulaire de candidature</h5>
+                            <small class="text-muted">Veuillez remplir toutes les informations requises</small>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card Body #}
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="form-modern">
+                        {{ include('equivalence/_form.html.twig', {
+                            button_label: 'Enregistrer le dossier',
+                            cancel_path: path('equivalence_index')
+                        }) }}
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
-
-        <div class="card-body p-4">
-
-            {{ include('equivalence/_form.html.twig', {
-                button_label: 'Enregistrer le dossier',
-                cancel_path: path('equivalence_index')
-            }) }}
-
-        </div>
-
     </div>
 
 </div>
+
 {% endblock %}
 
 {% block javascripts %}
 {{ parent() }}
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
 
-    // =====================================================
-    // HYDRATATION UNIVERSITÉ / PAYS
-    // =====================================================
+    // =============================================================
+    // 1. Remplissage automatique Université et Pays
+    // =============================================================
+    const diplomeSelect = document.getElementById('equivalence_diplomeReference');
+    const universiteInput = document.getElementById('equivalence_universite');
+    const paysInput = document.getElementById('equivalence_pays');
 
-    const diplomaSelect = document.getElementById('equivalence_diplomeReference');
-    const universiteField = document.getElementById('equivalence_universite');
-    const paysField = document.getElementById('equivalence_pays');
+    function autoFillUniversityAndCountry() {
+        if (!diplomeSelect || !universiteInput || !paysInput) return;
 
-    if (diplomaSelect && universiteField && paysField) {
+        const option = diplomeSelect.options[diplomeSelect.selectedIndex];
 
-        const updateFields = () => {
-
-            const selectedOption =
-                diplomaSelect.options[diplomaSelect.selectedIndex];
-
-            universiteField.value =
-                selectedOption?.dataset.organisme || '';
-
-            paysField.value =
-                selectedOption?.dataset.pays || '';
-        };
-
-        diplomaSelect.addEventListener('change', updateFields);
-
-        updateFields();
+        if (option && option.value !== '') {
+            universiteInput.value = option.dataset.organisme || '';
+            paysInput.value = option.dataset.pays || '';
+        } else {
+            universiteInput.value = '';
+            paysInput.value = '';
+        }
     }
 
-    // =====================================================
-    // MASQUE CNI
-    // =====================================================
+    if (diplomeSelect) {
+        diplomeSelect.addEventListener('change', autoFillUniversityAndCountry);
+        // Exécuter au chargement (utile en cas de retour après erreur de validation)
+        autoFillUniversityAndCountry();
+    }
 
-    const cniInput =
-        document.querySelector('[data-mask="cni"]');
 
+    // =============================================================
+    // 2. Masque CNI (12 chiffres avec espaces)
+    // =============================================================
+    const cniInput = document.querySelector('[data-mask="cni"]');
     if (cniInput) {
+        const formatCNI = (v) => v.replace(/\D/g, '').slice(0,12).replace(/(\d{3})(?=\d)/g, '$1 ');
 
-        const formatCni = (value) => {
-
-            let cleaned =
-                value.replace(/\D/g, '').substring(0, 12);
-
-            return cleaned.replace(/(\d{3})(?=\d)/g, '$1 ');
-        };
-
-        cniInput.addEventListener('input', (e) => {
-            e.target.value = formatCni(e.target.value);
+        cniInput.addEventListener('input', e => {
+            e.target.value = formatCNI(e.target.value);
         });
 
-        cniInput.value = formatCni(cniInput.value);
-
+        // Nettoyage avant soumission
         const form = cniInput.closest('form');
-
         if (form) {
-
             form.addEventListener('submit', () => {
-                cniInput.value =
-                    cniInput.value.replace(/\s+/g, '');
+                cniInput.value = cniInput.value.replace(/\s/g, '');
             });
-
         }
     }
 
-    // =====================================================
-    // SECTION CNI MAJEUR
-    // =====================================================
 
-    const birthdateInput =
-        document.getElementById('equivalence_dateNaissance');
+    // =============================================================
+    // 3. Affichage conditionnel section CNI selon âge
+    // =============================================================
+    const dateNaissance = document.getElementById('equivalence_dateNaissance');
+    const cinSection = document.getElementById('cin-detail-section');
 
-    const cinDetailSection =
-        document.getElementById('cin-detail-section');
+    if (dateNaissance && cinSection) {
+        const getAge = (birth) => {
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+            return age;
+        };
 
-    function calculateAge(birthDate) {
+        const toggleCinSection = () => {
+            if (!dateNaissance.value) {
+                cinSection.style.display = 'none';
+                return;
+            }
+            const birthDate = new Date(dateNaissance.value);
+            cinSection.style.display = getAge(birthDate) >= 18 ? 'block' : 'none';
+        };
 
-        const today = new Date();
-
-        let age =
-            today.getFullYear() - birthDate.getFullYear();
-
-        const m =
-            today.getMonth() - birthDate.getMonth();
-
-        if (
-            m < 0 ||
-            (m === 0 &&
-            today.getDate() < birthDate.getDate())
-        ) {
-            age--;
-        }
-
-        return age;
+        dateNaissance.addEventListener('change', toggleCinSection);
+        toggleCinSection(); // Exécution initiale
     }
 
-    function toggleDetailSection() {
 
-        if (!cinDetailSection) return;
+    // =============================================================
+    // 4. Affichage conditionnel Matricule (Fonctionnaire)
+    // =============================================================
+    const emploi = document.getElementById('equivalence_emploi');
+    const matriculeField = document.getElementById('matricule-field');
 
-        if (birthdateInput && birthdateInput.value) {
+    if (emploi && matriculeField) {
+        const toggleMatricule = () => {
+            const isFonctionnaire = emploi.value === 'fonctionnaire';
+            matriculeField.style.display = isFonctionnaire ? 'block' : 'none';
 
-            const birthDate =
-                new Date(birthdateInput.value);
+            if (!isFonctionnaire) {
+                const input = matriculeField.querySelector('input');
+                if (input) input.value = '';
+            }
+        };
 
-            const age = calculateAge(birthDate);
-
-            cinDetailSection.style.display =
-                age >= 18 ? 'block' : 'none';
-
-        } else {
-
-            cinDetailSection.style.display = 'none';
-        }
-    }
-
-    if (birthdateInput) {
-
-        birthdateInput.addEventListener(
-            'change',
-            toggleDetailSection
-        );
-
-        toggleDetailSection();
+        emploi.addEventListener('change', toggleMatricule);
+        toggleMatricule(); // Exécution initiale
     }
 
 });

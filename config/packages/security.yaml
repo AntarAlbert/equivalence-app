@@ -1,12 +1,18 @@
-# config/packages/security.yaml
 security:
     role_hierarchy:
-        ROLE_CANDIDAT: []
-        ROLE_ETABLISSEMENT: []
-        ROLE_COMMISSION: []
-        ROLE_AGENT: []
+        ROLE_USER: [] # rôle de base
+        ROLE_CANDIDAT: [ROLE_USER]
+        ROLE_ETABLISSEMENT: [ROLE_CANDIDAT, ROLE_USER]
+        ROLE_COMMISSION: [ROLE_AGENT, ROLE_CANDIDAT, ROLE_USER]
+        ROLE_AGENT: [ROLE_CANDIDAT, ROLE_USER]
         ROLE_ADMIN:
-            [ROLE_AGENT, ROLE_COMMISSION, ROLE_ETABLISSEMENT, ROLE_CANDIDAT]
+            [
+                ROLE_AGENT,
+                ROLE_COMMISSION,
+                ROLE_ETABLISSEMENT,
+                ROLE_CANDIDAT,
+                ROLE_USER,
+            ]
         ROLE_SUPER_ADMIN: [ROLE_ADMIN]
 
     password_hashers:
@@ -26,8 +32,6 @@ security:
         main:
             lazy: true
             provider: app_user_provider
-
-            # Authentification par formulaire (intégré)
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -35,23 +39,17 @@ security:
                 password_parameter: password
                 enable_csrf: true
                 csrf_token_id: authenticate
-                default_target_path: after_login # <- nom de la route de redirection
+                default_target_path: after_login
                 always_use_default_target_path: true
-
             logout:
                 path: app_logout
                 target: app_login
                 invalidate_session: true
 
-            remember_me:
-                secret: "%kernel.secret%"
-                lifetime: 604800 # 7 jours
-
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
-
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/commission, roles: ROLE_COMMISSION }
         - { path: ^/etablissement, roles: ROLE_ETABLISSEMENT }
-        - { path: ^/equivalence, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/equivalence, roles: IS_AUTHENTICATED_FULLY } # ou ROLE_USER

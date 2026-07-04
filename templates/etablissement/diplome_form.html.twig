@@ -1,16 +1,146 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Proposer un diplôme{% endblock %}
+{% block title %}{{ isEdit ? 'Modifier le diplôme' : 'Proposer un nouveau diplôme' }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .form-floating > label {
+            font-weight: 500;
+        }
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+{% endblock %}
 
 {% block body %}
-<div class="container mt-4">
-    <h1>Proposer un diplôme à la commission</h1>
-    {{ form_start(form) }}
-        {{ form_row(form.titre) }}
-        {{ form_row(form.etablissement) }} {# établissement d'origine du diplôme #}
-        {{ form_row(form.domaine) }}
-        {{ form_row(form.niveau) }}
-        <button type="submit" class="btn btn-success">Envoyer pour validation</button>
-    {{ form_end(form) }}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+
+            <div class="card border-0 shadow">
+                <div class="card-header text-white py-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-mortarboard-fill fs-2 me-3"></i>
+                        <h2 class="h4 mb-0 fw-semibold">
+                            {{ isEdit ? 'Modification du diplôme' : 'Proposition d’un nouveau diplôme' }}
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    {{ form_start(form, {
+                        attr: {
+                            id: 'diplome-form',
+                            class: 'needs-validation',
+                            novalidate: 'novalidate'
+                        }
+                    }) }}
+
+                    {{ form_errors(form) }}
+
+                    <div class="row g-4">
+
+                        <!-- Titre -->
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form_widget(form.titre, {
+                                    attr: {
+                                        placeholder: ' ',
+                                        class: 'form-control form-control-lg'
+                                    }
+                                }) }}
+                                {{ form_label(form.titre, 'Intitulé complet du diplôme') }}
+                                {{ form_errors(form.titre) }}
+                            </div>
+                        </div>
+
+                        <!-- Domaine -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form_widget(form.domaine, {
+                                    attr: { placeholder: ' ' }
+                                }) }}
+                                {{ form_label(form.domaine, 'Domaine') }}
+                                {{ form_errors(form.domaine) }}
+                            </div>
+                        </div>
+
+                        <!-- Niveau -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form_widget(form.niveau, {
+                                    attr: { placeholder: ' ' }
+                                }) }}
+                                {{ form_label(form.niveau, 'Niveau') }}
+                                {{ form_errors(form.niveau) }}
+                            </div>
+                        </div>
+
+                        <!-- Durée (avec spinner) -->
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ form_widget(form.duree, {
+                                    attr: {
+                                        placeholder: ' ',
+                                        min: '0',
+                                        max: '10',
+                                        step: '1',
+                                        class: 'form-control'
+                                    }
+                                }) }}
+                                {{ form_label(form.duree, 'Durée en années') }}
+                                {{ form_errors(form.duree) }}
+                            </div>
+                        </div>
+
+                        <!-- Établissement -->
+                        <div class="col-md-6">
+                            {% if is_granted('ROLE_ETABLISSEMENT') %}
+                                {{ form_widget(form.etablissement, { attr: { class: 'd-none' } }) }}
+                            {% else %}
+                                <div class="form-floating">
+                                    {{ form_widget(form.etablissement, { attr: { placeholder: ' ' } }) }}
+                                    {{ form_label(form.etablissement, 'Établissement') }}
+                                    {{ form_errors(form.etablissement) }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                    <hr class="my-5">
+
+                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-between">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="bi bi-check2-circle me-2"></i>
+                            {{ isEdit ? 'Mettre à jour le diplôme' : 'Soumettre à la commission' }}
+                        </button>
+
+                        <a href="{{ path('etablissement_diplome_index') }}"
+                           class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="bi bi-arrow-left me-2"></i> Annuler
+                        </a>
+                    </div>
+
+                    {{ form_end(form) }}
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>
 {% endblock %}

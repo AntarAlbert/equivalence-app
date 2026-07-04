@@ -1,36 +1,247 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Connexion{% endblock %}
+{% block title %}Connexion — Equivalence SI
+{% endblock %}
+
 
 {% block body %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card mt-5">
-                <div class="card-header">Se connecter</div>
-                <div class="card-body">
-                    <form method="post">
-                        {% if error %}
-                            <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-                        {% endif %}
+<div class="login-wrap">
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" id="email" name="email" value="{{ last_username }}" class="form-control" required autofocus>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Mot de passe</label>
-                            <input type="password" id="password" name="password" class="form-control" required>
-                        </div>
+{# ===== CARTE DE CONNEXION ===== #}
+<div
+	class="login-card">
 
-                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+	{# En-tête #}
+	<div class="login-header">
+		<div class="login-brand-icon" aria-hidden="true">
+			<i class="bi bi-mortarboard-fill"></i>
+		</div>
+		<h1 class="login-title">Connexion</h1>
+		<p class="login-subtitle">Accédez à votre espace Equivalence SI</p>
+	</div>
 
-                        <button type="submit" class="btn btn-primary">Connexion</button>
-                    </form>
+
+{# Message d'erreur #}
+{% if error %}
+	<div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+		<i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+		<span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+	</div>
+
+{% endif %}
+
+
+{# Formulaire #}
+{#
+            - novalidate : on laisse Symfony gérer les erreurs serveur ;
+              la validation HTML5 reste active via les attributs required/type.
+            - autocomplete="on" : autorise les gestionnaires de mots de passe.
+        #}
+	<form
+	method="post" autocomplete="on" novalidate> {# Token CSRF — doit correspondre à csrf_token_id dans security.yaml #}
+
+<input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+
+{# Email #}
+<div class="mb-3">
+	<label for="email" class="form-label fw-semibold">
+		Adresse e-mail
+	</label>
+	<div class="input-group">
+		<span class="input-group-text" aria-hidden="true">
+			<i class="bi bi-envelope"></i>
+		</span>
+		<input type="email" id="email" name="email" class="form-control" value="{{ last_username|e }}" placeholder="vous@exemple.mg" autocomplete="username email" required autofocus aria-describedby="email-help">
+
                 </div>
             </div>
-        </div>
-    </div>
+{# Mot de passe #}
+<div class="mb-3">
+	<div class="d-flex justify-content-between align-items-center mb-1">
+		<label for="password" class="form-label fw-semibold mb-0">
+			Mot de passe
+		</label>
+		{# Décommente si tu implémentes le reset password #}
+		{# <a href="{{ path('app_forgot_password') }}" class="small text-primary">Mot de passe oublié ?</a> #}
+
 </div>
+
+<div class="input-group">
+	<span class="input-group-text" aria-hidden="true">
+		<i class="bi bi-lock"></i>
+	</span>
+	<input type="password" id="password" name="password" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
+	<button type="button" class="btn btn-outline-secondary" id="togglePassword" aria-label="Afficher ou masquer le mot de passe" aria-pressed="false">
+		<i class="bi bi-eye" aria-hidden="true" id="togglePasswordIcon"></i>
+	</button>
+
+</div></div>
+
+{# Se souvenir de moi
+                 Le nom "_remember_me" est requis par Symfony.
+                 Sans cette case, le cookie remember_me n'est jamais émis,
+                 même si remember_me est configuré dans security.yaml.
+            #}
+<div class="form-check mb-4">
+	<input class="form-check-input" type="checkbox" name="_remember_me" id="remember_me" value="on">
+	<label class="form-check-label text-muted" for="remember_me">
+		Se souvenir de moi
+		<span class="small">(7 jours)</span>
+	</label>
+</div>
+
+{# Bouton de soumission #}
+<button type="submit" class="btn btn-primary w-100 btn-login">
+	<i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>
+	Se connecter
+</button></form></div>{# /login-card #}</div>{# /login-wrap #}{% endblock %}{% block stylesheets %}{{ parent() }}<style>/* Cache la sidebar et le topbar sur la page login */
+.topbar,
+.sidebar,
+.sidebar-overlay {
+	display: none !important;
+}
+
+.main-content {
+	margin-left: 0 !important;
+	padding: 0 !important;
+}
+
+/* ===== Mise en page centrée ===== */
+.login-wrap {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(26,86,219,.10) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(45, 116, 245, 0.08) 0%, transparent 60%), var(--bg);
+}
+
+/* ===== Carte ===== */
+.login-card {
+	width: 100%;
+	max-width: 440px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 24px;
+	padding: 2.5rem 2.25rem;
+	box-shadow: 0 20px 60px rgba(15, 23, 42, .10);
+	animation: cardIn 0.4s cubic-bezier(0.2,0,0.2,1) both;
+}
+
+@keyframes cardIn {
+	from {
+		opacity: 0;
+		transform: translateY(18px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* ===== En-tête ===== */
+.login-header {
+	text-align: center;
+	margin-bottom: 2rem;
+}
+
+.login-brand-icon {
+	width: 56px;
+	height: 56px;
+	border-radius: 18px;
+	background: var(--primary);
+	color: #fff;
+	font-size: 1.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 1rem;
+	box-shadow: 0 8px 24px rgba(26, 86, 219, .28);
+}
+
+.login-title {
+	font-family: 'Sora', sans-serif;
+	font-size: 1.6rem;
+	font-weight: 700;
+	margin-bottom: 0.25rem;
+	color: var(--text);
+}
+
+.login-subtitle {
+	font-size: 0.88rem;
+	color: var(--text-muted);
+	margin-bottom: 0;
+}
+
+/* ===== Champs ===== */
+.form-label {
+	font-size: 0.88rem;
+	color: var(--text);
+}
+
+.form-control,
+.input-group-text,
+.btn-outline-secondary {
+	border-color: var(--border);
+	background: var(--bg);
+	color: var(--text);
+	font-size: 0.9rem;
+}
+
+.form-control:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px rgba(26, 86, 219, .12);
+	background: var(--surface);
+}
+
+.input-group-text {
+	color: var(--text-muted);
+}
+
+/* ===== Bouton connexion ===== */
+.btn-login {
+	padding: 0.75rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+	border-radius: var(--radius-lg);
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-login:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 20px rgba(26, 86, 219, .28);
+}
+
+.btn-login:active {
+	transform: translateY(0);
+}
+
+/* ===== Responsive ===== */
+@media(max-width: 480px) {
+	.login-card {
+		padding: 1.75rem 1.25rem;
+		border-radius: 18px;
+	}
+}</style>{% endblock %}{% block javascripts %}{{ parent() }}<script>'use strict';
+document.addEventListener('DOMContentLoaded', function () {
+
+/* ===== Bascule affichage mot de passe ===== */
+var btn = document.getElementById('togglePassword');
+var pwd = document.getElementById('password');
+var icon = document.getElementById('togglePasswordIcon');
+
+if (btn && pwd && icon) {
+btn.addEventListener('click', function () {
+var isPassword = pwd.type === 'password';
+pwd.type = isPassword ? 'text' : 'password';
+icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+btn.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+});
+}
+
+});</script>
+
 {% endblock %}

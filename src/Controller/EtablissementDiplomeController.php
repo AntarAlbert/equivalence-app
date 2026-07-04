@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Diplome;
+use App\Entity\User;
 use App\Form\DiplomeType;
 use App\Repository\DiplomeRepository;
 use App\Security\Voter\DiplomeVoter;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,44 +20,54 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ETABLISSEMENT')]
 class EtablissementDiplomeController extends AbstractController
 {
-    #[Route('/', name: 'etablissement_diplome_index', methods: ['GET'])]
-    public function index(
-        Request $request,
-        DiplomeRepository $repository
-    ): Response {
+#[Route('/', name: 'etablissement_diplome_index', methods: ['GET'])]
+public function index(
+    Request $request,
+    DiplomeRepository $repository,
+    PaginatorInterface $paginator
+): Response {
+    $search = trim((string) $request->query->get('search', ''));
+    $user = $this->getUser();
 
-        $search = trim((string) $request->query->get('search', ''));
+    // Vérification du type
+    if (!$user instanceof User) {
+        throw $this->createAccessDeniedException('Utilisateur non valide.');
+    }
 
-        $user = $this->getUser();
-
-        $queryBuilder = $repository
-            ->createQueryBuilder('d')
-            ->leftJoin('d.etablissement', 'e')
-            ->addSelect('e')
-            ->where('d.proposedBy = :user')
-            ->setParameter('user', $user)
-            ->orderBy('d.createdAt', 'DESC');
-
-        if ($search !== '') {
-
-            $queryBuilder
-                ->andWhere('
-                    d.titre LIKE :search
-                    OR e.nom LIKE :search
-                ')
-                ->setParameter('search', '%' . $search . '%');
-        }
-
-        $diplomes = $queryBuilder
-            ->getQuery()
-            ->getResult();
-
+    $etablissement = $user->getEtablissement();
+    if (!$etablissement) {
+        $this->addFlash('warning', 'Aucun établissement associé à votre compte.');
         return $this->render('etablissement/diplome_list.html.twig', [
-            'diplomes' => $diplomes,
+            'diplomes' => [],
             'search' => $search,
         ]);
     }
 
+    $queryBuilder = $repository->createQueryBuilder('d')
+        ->leftJoin('d.etablissement', 'e')
+        ->addSelect('e')
+        ->where('d.etablissementSource = :etablissement')
+        ->setParameter('etablissement', $etablissement)
+        ->orderBy('d.createdAt', 'DESC');
+
+    if ($search !== '') {
+        $queryBuilder
+            ->andWhere('d.titre LIKE :search OR e.nom LIKE :search')
+            ->setParameter('search', '%' . $search . '%');
+    }
+
+    // Pagination (10 éléments par page)
+    $diplomes = $paginator->paginate(
+        $queryBuilder,
+        $request->query->getInt('page', 1),
+        10
+    );
+
+    return $this->render('etablissement/diplome_list.html.twig', [
+        'diplomes' => $diplomes,
+        'search' => $search,
+    ]);
+}
     #[Route('/new', name: 'etablissement_diplome_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -97,13 +109,7 @@ class EtablissementDiplomeController extends AbstractController
             Diplome::STATUS_PENDING
         );
 
-        $form = $this->createForm(
-            DiplomeType::class,
-            $diplome,
-            [
-                'is_etablissement' => true,
-            ]
-        );
+        $form = $this->createForm(DiplomeType::class, $diplome);
 
         $form->handleRequest($request);
 
@@ -208,13 +214,7 @@ class EtablissementDiplomeController extends AbstractController
             );
         }
 
-        $form = $this->createForm(
-            DiplomeType::class,
-            $diplome,
-            [
-                'is_etablissement' => true,
-            ]
-        );
+       $form = $this->createForm(DiplomeType::class, $diplome);
 
         $form->handleRequest($request);
 
@@ -362,4 +362,6 @@ class EtablissementDiplomeController extends AbstractController
             'etablissement_diplome_index'
         );
     }
+
+
 }

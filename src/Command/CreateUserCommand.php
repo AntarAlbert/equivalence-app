@@ -9,13 +9,12 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[AsCommand(
     name: 'app:create-user',
-    description: 'Crée un utilisateur avec un rôle spécifique'
+    description: 'Crée un utilisateur avec un rôle spécifique (candidat, etablissement, commission, agent, admin)'
 )]
 class CreateUserCommand extends Command
 {
@@ -43,19 +42,18 @@ class CreateUserCommand extends Command
         $role = $input->getOption('role');
         $fullname = $input->getOption('fullname');
 
-        // Validation des entrées
         if (!$email || !$plainPassword || !$role) {
             $output->writeln('<error>Les options --email, --password et --role sont obligatoires.</error>');
             return Command::FAILURE;
         }
 
-        // Mapping des rôles
+        // Mapping des rôles (uniquement le rôle principal, l’héritage est dans security.yaml)
         $roleMap = [
-            'candidat' => ['ROLE_CANDIDAT'],
-            'etablissement' => ['ROLE_ETABLISSEMENT', 'ROLE_CANDIDAT'],
-            'commission' => ['ROLE_COMMISSION', 'ROLE_AGENT', 'ROLE_CANDIDAT'],
-            'agent' => ['ROLE_AGENT', 'ROLE_CANDIDAT'],
-            'admin' => ['ROLE_ADMIN', 'ROLE_COMMISSION', 'ROLE_AGENT', 'ROLE_ETABLISSEMENT', 'ROLE_CANDIDAT'],
+            'candidat'      => ['ROLE_CANDIDAT'],
+            'etablissement' => ['ROLE_ETABLISSEMENT'],
+            'commission'    => ['ROLE_COMMISSION'],
+            'agent'         => ['ROLE_AGENT'],
+            'admin'         => ['ROLE_ADMIN'],
         ];
 
         $roleKey = strtolower($role);
@@ -75,8 +73,10 @@ class CreateUserCommand extends Command
         $user = new User();
         $user->setEmail($email);
         $user->setRoles($roleMap[$roleKey]);
-        $user->setFullName($fullname);
-        $user->setIsVerified(true); // Pour les utilisateurs créés en CLI (ou false selon besoin)
+        if ($fullname) {
+            $user->setFullName($fullname);
+        }
+        $user->setIsVerified(true);
         $user->setVerifiedAt(new \DateTimeImmutable());
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);

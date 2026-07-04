@@ -43,6 +43,9 @@ class EquivalenceController extends AbstractController
     public const CLASSEMENT_A2 = 'A2';
 
     public const SENSITIVE_TRANSITIONS = ['submit', 'approve', 'reject', 'ask_modification'];
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,  ) {
+    }
 
     // INDEX (avec filtre CANDIDAT)
     #[Route('/', name: 'equivalence_index', methods: ['GET'])]
@@ -213,13 +216,30 @@ class EquivalenceController extends AbstractController
         return $this->render('equivalence/new.html.twig', ['form' => $form->createView()]);
     }
 
-    // SHOW – protégé par Voter
-    #[Route('/{id}', name: 'equivalence_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    #[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
-    public function show(Equivalence $equivalence): Response
-    {
-        return $this->render('equivalence/show.html.twig', ['equivalence' => $equivalence]);
-    }
+   // src/Controller/EquivalenceController.php
+
+#[Route('/{id}', name: 'equivalence_show', methods: ['GET'])]
+#[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
+public function show(Equivalence $equivalence): Response
+{
+    // Forcer le chargement des relations pour éviter les requêtes N+1
+    $this->entityManager->createQueryBuilder()
+        ->select('e', 'n', 'd', 'et', 'p', 'doc')
+        ->from(Equivalence::class, 'e')
+        ->leftJoin('e.nationalite', 'n')
+        ->leftJoin('e.diplomeReference', 'd')
+        ->leftJoin('d.etablissement', 'et')
+        ->leftJoin('et.pays', 'p')
+        ->leftJoin('e.documents', 'doc')
+        ->where('e.id = :id')
+        ->setParameter('id', $equivalence->getId())
+        ->getQuery()
+        ->getOneOrNullResult();
+
+    return $this->render('equivalence/show.html.twig', [
+        'equivalence' => $equivalence,
+    ]);
+}
  #[Route('/{id}/edit', name: 'equivalence_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
 #[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
 public function edit(
