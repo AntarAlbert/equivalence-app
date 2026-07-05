@@ -27,8 +27,8 @@ class CommissionDiplomeController extends AbstractController
             'pending' => $pendingDiplomes,
         ]);
     }
-
     #[Route('/{id}/approve', name: 'commission_diplome_approve', methods: ['POST'])]
+    #[IsGranted('ROLE_COMMISSION')]
     public function approve(Diplome $diplome, EntityManagerInterface $em, WorkflowInterface $diplomeWorkflow, Request $request): Response
     {
         if (!$this->isCsrfTokenValid('approve_diplome_' . $diplome->getId(), $request->request->get('_token'))) {
@@ -71,26 +71,25 @@ class CommissionDiplomeController extends AbstractController
     }
 
     #[Route('/{id}/regle/new', name: 'commission_regle_new', methods: ['GET', 'POST'])]
-public function newRegle(Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
-{
-    $regle = new RegleEquivalence();
-    $regle->setDiplome($diplome);
-    $form = $this->createForm(RegleEquivalenceType::class, $regle);
-    $form->handleRequest($request);
+    public function newRegle(Diplome $diplome, Request $request, RegleEquivalenceManager $manager): Response
+    {
+        $regle = new RegleEquivalence();
+        $regle->setDiplome($diplome);
+        $form = $this->createForm(RegleEquivalenceType::class, $regle);
+        $form->handleRequest($request);
 
-    if ($form->isSubmitted() && $form->isValid()) {
-        $manager->save($regle);
-        $this->addFlash('success', 'Règle créée.');
-        return $this->redirectToRoute('commission_diplome_index');
+        if ($form->isSubmitted() && $form->isValid()) {
+            $manager->save($regle);
+            $this->addFlash('success', 'Règle créée.');
+            return $this->redirectToRoute('commission_diplome_index');
+        }
+
+        return $this->render('admin/regle_equivalence/form.html.twig', [
+            'form' => $form->createView(),
+            'regle' => $regle,
+            'diplome' => $diplome,         // facultatif car accessible via $regle->getDiplome()
+            'isEdit' => false,
+            'cancel_path' => $this->generateUrl('commission_diplome_index'),
+        ]);
     }
-
-    return $this->render('admin/regle_equivalence/form.html.twig', [
-        'form' => $form->createView(),
-        'regle' => $regle,
-        'diplome' => $diplome,         // facultatif car accessible via $regle->getDiplome()
-        'isEdit' => false,
-        'cancel_path' => $this->generateUrl('commission_diplome_index'),
-    ]);
-}
-
 }

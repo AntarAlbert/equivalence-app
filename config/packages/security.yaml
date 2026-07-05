@@ -52,4 +52,6 @@ security:
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/commission, roles: ROLE_COMMISSION }
         - { path: ^/etablissement, roles: ROLE_ETABLISSEMENT }
-        - { path: ^/equivalence, roles: IS_AUTHENTICATED_FULLY } # ou ROLE_USER
+        - { path: ^/equivalence, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/verify, roles: PUBLIC_ACCESS }
+        - { path: ^/, roles: IS_AUTHENTICATED_FULLY }

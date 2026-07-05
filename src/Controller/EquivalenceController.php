@@ -44,8 +44,8 @@ class EquivalenceController extends AbstractController
 
     public const SENSITIVE_TRANSITIONS = ['submit', 'approve', 'reject', 'ask_modification'];
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,  ) {
-    }
+        private readonly EntityManagerInterface $entityManager,
+    ) {}
 
     // INDEX (avec filtre CANDIDAT)
     #[Route('/', name: 'equivalence_index', methods: ['GET'])]
@@ -88,10 +88,12 @@ class EquivalenceController extends AbstractController
         }
 
         // IMPORTANT : candidat ne voit que ses dossiers
-        if ($this->isGranted('ROLE_CANDIDAT') &&
+        if (
+            $this->isGranted('ROLE_CANDIDAT') &&
             !$this->isGranted('ROLE_AGENT') &&
             !$this->isGranted('ROLE_COMMISSION') &&
-            !$this->isGranted('ROLE_ADMIN')) {
+            !$this->isGranted('ROLE_ADMIN')
+        ) {
             $queryBuilder
                 ->andWhere('e.user = :user')
                 ->setParameter('user', $this->getUser());
@@ -216,226 +218,230 @@ class EquivalenceController extends AbstractController
         return $this->render('equivalence/new.html.twig', ['form' => $form->createView()]);
     }
 
-   // src/Controller/EquivalenceController.php
+    // src/Controller/EquivalenceController.php
 
-#[Route('/{id}', name: 'equivalence_show', methods: ['GET'])]
-#[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
-public function show(Equivalence $equivalence): Response
-{
-    // Forcer le chargement des relations pour éviter les requêtes N+1
-    $this->entityManager->createQueryBuilder()
-        ->select('e', 'n', 'd', 'et', 'p', 'doc')
-        ->from(Equivalence::class, 'e')
-        ->leftJoin('e.nationalite', 'n')
-        ->leftJoin('e.diplomeReference', 'd')
-        ->leftJoin('d.etablissement', 'et')
-        ->leftJoin('et.pays', 'p')
-        ->leftJoin('e.documents', 'doc')
-        ->where('e.id = :id')
-        ->setParameter('id', $equivalence->getId())
-        ->getQuery()
-        ->getOneOrNullResult();
+    #[Route('/{id}', name: 'equivalence_show', methods: ['GET'])]
+    #[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
+    public function show(Equivalence $equivalence): Response
+    {
+        // Forcer le chargement des relations pour éviter les requêtes N+1
+        $this->entityManager->createQueryBuilder()
+            ->select('e', 'n', 'd', 'et', 'p', 'doc')
+            ->from(Equivalence::class, 'e')
+            ->leftJoin('e.nationalite', 'n')
+            ->leftJoin('e.diplomeReference', 'd')
+            ->leftJoin('d.etablissement', 'et')
+            ->leftJoin('et.pays', 'p')
+            ->leftJoin('e.documents', 'doc')
+            ->where('e.id = :id')
+            ->setParameter('id', $equivalence->getId())
+            ->getQuery()
+            ->getOneOrNullResult();
 
-    return $this->render('equivalence/show.html.twig', [
-        'equivalence' => $equivalence,
-    ]);
-}
- #[Route('/{id}/edit', name: 'equivalence_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-#[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
-public function edit(
-    Equivalence $equivalence,  // ← Changement clé : injection directe par le ParamConverter
-    Request $request,
-    EntityManagerInterface $em,
-    LoggerInterface $logger,
-    DocumentUploader $uploader
-): Response {
-    // Vérification du statut (modifiable seulement en brouillon ou soumis)
-    if (!in_array($equivalence->getStatus(), [
-        self::STATUS_DRAFT,
-        self::STATUS_SUBMITTED
-    ])) {
-        $this->addFlash('warning', 'Ce dossier ne peut plus être modifié.');
-        return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+        return $this->render('equivalence/show.html.twig', [
+            'equivalence' => $equivalence,
+        ]);
     }
-
-    // Formulaire
-    $form = $this->createForm(EquivalenceType::class, $equivalence);
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        // Validation CNI selon âge
-        $dateNaissance = $equivalence->getDateNaissance();
-        $age = $dateNaissance ? (new \DateTimeImmutable())->diff($dateNaissance)->y : null;
-
-        if ($age !== null && $age >= 18) {
-            if (empty($equivalence->getCni()) || empty($equivalence->getCniDateDelivrance()) || empty($equivalence->getCniLieuDelivrance())) {
-                $this->addFlash('danger', 'Pour un majeur, le numéro CNI, la date et le lieu de délivrance sont obligatoires.');
-                return $this->render('equivalence/edit.html.twig', [
-                    'form' => $form->createView(),
-                    'equivalence' => $equivalence
-                ]);
-            }
-        } else {
-            // Mineur : effacement des infos CNI
-            $equivalence->setCni(null);
-            $equivalence->setCniDateDelivrance(null);
-            $equivalence->setCniLieuDelivrance(null);
-            $equivalence->setCniDateDuplicata(null);
-            $equivalence->setCniLieuDuplicata(null);
-        }
-
-        // Synchronisation diplôme / établissement (si besoin)
-        if ($equivalence->getDiplomeReference()) {
-            $diplomeRef = $equivalence->getDiplomeReference();
-            $equivalence->setDiplome($diplomeRef->getTitre() ?? '');
-            if ($diplomeRef->getEtablissement()) {
-                $etab = $diplomeRef->getEtablissement();
-                $equivalence->setUniversite($etab->getNom() ?? '');
-                $equivalence->setPays($etab->getPays()?->getNomFrFr() ?? '');
-            }
-        }
-
-        // Gestion des documents (upload, remplacement)
-        $documentsMapping = [
-            'diplomaFile'    => Document::TYPE_DIPLOME,
-            'transcriptFile' => Document::TYPE_RELEVE,
-            'identityFile'   => Document::TYPE_CIN,
-        ];
-
-        foreach ($documentsMapping as $field => $type) {
-            $file = $form->get($field)->getData();
-            if (!$file instanceof UploadedFile) {
-                continue;
-            }
-
-            try {
-                // Nouveau document
-                $newDocument = new Document();
-                $uploader->upload($file, $newDocument, $type);
-                $equivalence->addDocument($newDocument);
-                $em->persist($newDocument);
-
-                // Suppression des anciens du même type
-                foreach ($equivalence->getDocuments() as $existingDocument) {
-                    if ($existingDocument === $newDocument) continue;
-                    if ($existingDocument->getType() !== $type) continue;
-
-                    $oldPath = $this->getParameter('kernel.project_dir') . '/public/' . ltrim($existingDocument->getPath(), '/');
-                    if (is_file($oldPath)) {
-                        try { unlink($oldPath); } catch (\Throwable $e) { /* log */ }
-                    }
-                    $equivalence->removeDocument($existingDocument);
-                    $em->remove($existingDocument);
-                }
-            } catch (\Throwable $e) {
-                $logger->error('Erreur upload document modification', [
-                    'dossier_id' => $equivalence->getId(),
-                    'type' => $type,
-                    'error' => $e->getMessage(),
-                ]);
-                $this->addFlash('danger', 'Erreur lors du téléversement du document ' . $type);
-                return $this->render('equivalence/edit.html.twig', [
-                    'form' => $form->createView(),
-                    'equivalence' => $equivalence,
-                ]);
-            }
-        }
-
-        // Sauvegarde finale
-        try {
-            $em->flush();
-            $logger->info('Dossier modifié', ['id' => $equivalence->getId(), 'user' => $this->getUser()?->getUserIdentifier()]);
-            $this->addFlash('success', 'Dossier modifié avec succès.');
+    #[Route('/{id}/edit', name: 'equivalence_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    #[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
+    public function edit(
+        Equivalence $equivalence,  // ← Changement clé : injection directe par le ParamConverter
+        Request $request,
+        EntityManagerInterface $em,
+        LoggerInterface $logger,
+        DocumentUploader $uploader
+    ): Response {
+        $this->denyAccessUnlessGranted(EquivalenceVoter::EDIT, $equivalence);
+        // Vérification du statut (modifiable seulement en brouillon ou soumis)
+        if (!in_array($equivalence->getStatus(), [
+            self::STATUS_DRAFT,
+            self::STATUS_SUBMITTED
+        ])) {
+            $this->addFlash('warning', 'Ce dossier ne peut plus être modifié.');
             return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-        } catch (\Throwable $e) {
-            $logger->error('Erreur modification dossier', ['id' => $equivalence->getId(), 'error' => $e->getMessage()]);
-            $this->addFlash('danger', 'Erreur technique lors de la modification.');
         }
+
+        // Formulaire
+        $form = $this->createForm(EquivalenceType::class, $equivalence);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Validation CNI selon âge
+            $dateNaissance = $equivalence->getDateNaissance();
+            $age = $dateNaissance ? (new \DateTimeImmutable())->diff($dateNaissance)->y : null;
+
+            if ($age !== null && $age >= 18) {
+                if (empty($equivalence->getCni()) || empty($equivalence->getCniDateDelivrance()) || empty($equivalence->getCniLieuDelivrance())) {
+                    $this->addFlash('danger', 'Pour un majeur, le numéro CNI, la date et le lieu de délivrance sont obligatoires.');
+                    return $this->render('equivalence/edit.html.twig', [
+                        'form' => $form->createView(),
+                        'equivalence' => $equivalence
+                    ]);
+                }
+            } else {
+                // Mineur : effacement des infos CNI
+                $equivalence->setCni(null);
+                $equivalence->setCniDateDelivrance(null);
+                $equivalence->setCniLieuDelivrance(null);
+                $equivalence->setCniDateDuplicata(null);
+                $equivalence->setCniLieuDuplicata(null);
+            }
+
+            // Synchronisation diplôme / établissement (si besoin)
+            if ($equivalence->getDiplomeReference()) {
+                $diplomeRef = $equivalence->getDiplomeReference();
+                $equivalence->setDiplome($diplomeRef->getTitre() ?? '');
+                if ($diplomeRef->getEtablissement()) {
+                    $etab = $diplomeRef->getEtablissement();
+                    $equivalence->setUniversite($etab->getNom() ?? '');
+                    $equivalence->setPays($etab->getPays()?->getNomFrFr() ?? '');
+                }
+            }
+
+            // Gestion des documents (upload, remplacement)
+            $documentsMapping = [
+                'diplomaFile'    => Document::TYPE_DIPLOME,
+                'transcriptFile' => Document::TYPE_RELEVE,
+                'identityFile'   => Document::TYPE_CIN,
+            ];
+
+            foreach ($documentsMapping as $field => $type) {
+                $file = $form->get($field)->getData();
+                if (!$file instanceof UploadedFile) {
+                    continue;
+                }
+
+                try {
+                    // Nouveau document
+                    $newDocument = new Document();
+                    $uploader->upload($file, $newDocument, $type);
+                    $equivalence->addDocument($newDocument);
+                    $em->persist($newDocument);
+
+                    // Suppression des anciens du même type
+                    foreach ($equivalence->getDocuments() as $existingDocument) {
+                        if ($existingDocument === $newDocument) continue;
+                        if ($existingDocument->getType() !== $type) continue;
+
+                        $oldPath = $this->getParameter('kernel.project_dir') . '/public/' . ltrim($existingDocument->getPath(), '/');
+                        if (is_file($oldPath)) {
+                            try {
+                                unlink($oldPath);
+                            } catch (\Throwable $e) { /* log */
+                            }
+                        }
+                        $equivalence->removeDocument($existingDocument);
+                        $em->remove($existingDocument);
+                    }
+                } catch (\Throwable $e) {
+                    $logger->error('Erreur upload document modification', [
+                        'dossier_id' => $equivalence->getId(),
+                        'type' => $type,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $this->addFlash('danger', 'Erreur lors du téléversement du document ' . $type);
+                    return $this->render('equivalence/edit.html.twig', [
+                        'form' => $form->createView(),
+                        'equivalence' => $equivalence,
+                    ]);
+                }
+            }
+
+            // Sauvegarde finale
+            try {
+                $em->flush();
+                $logger->info('Dossier modifié', ['id' => $equivalence->getId(), 'user' => $this->getUser()?->getUserIdentifier()]);
+                $this->addFlash('success', 'Dossier modifié avec succès.');
+                return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+            } catch (\Throwable $e) {
+                $logger->error('Erreur modification dossier', ['id' => $equivalence->getId(), 'error' => $e->getMessage()]);
+                $this->addFlash('danger', 'Erreur technique lors de la modification.');
+            }
+        }
+
+        return $this->render('equivalence/edit.html.twig', [
+            'form' => $form->createView(),
+            'equivalence' => $equivalence,
+        ]);
     }
 
-    return $this->render('equivalence/edit.html.twig', [
-        'form' => $form->createView(),
-        'equivalence' => $equivalence,
-    ]);
-}
-
-  #[Route('/{id}/transition/{transition}', name: 'equivalence_transition', methods: ['POST'])]
+    #[Route('/{id}/transition/{transition}', name: 'equivalence_transition', methods: ['POST'])]
     #[IsGranted(EquivalenceVoter::EDIT, subject: 'equivalence')]
     public function transition(Request $request, Equivalence $equivalence, string $transition, #[Autowire(service: 'state_machine.equivalence_state_machine')] WorkflowInterface $workflow, EntityManagerInterface $em, LoggerInterface $logger): Response
     {
-    $token = $request->request->get('_token');
-    if (!$this->isCsrfTokenValid('transition_' . $equivalence->getId(), $token)) {
-        $logger->warning('CSRF invalide', ['dossier_id' => $equivalence->getId(), 'transition' => $transition]);
-        $this->addFlash('danger', 'Token CSRF invalide.');
-        return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-    }
+        $token = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('transition_' . $equivalence->getId(), $token)) {
+            $logger->warning('CSRF invalide', ['dossier_id' => $equivalence->getId(), 'transition' => $transition]);
+            $this->addFlash('danger', 'Token CSRF invalide.');
+            return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+        }
 
-    $session = $request->getSession();
+        $session = $request->getSession();
 
-    if (in_array($transition, self::SENSITIVE_TRANSITIONS, true)) {
-        $otpValidated = $session->get('otp_validated_' . $equivalence->getId(), false);
-        if (!$otpValidated) {
-            $logger->info('OTP requis pour transition sensible', [
+        if (in_array($transition, self::SENSITIVE_TRANSITIONS, true)) {
+            $otpValidated = $session->get('otp_validated_' . $equivalence->getId(), false);
+            if (!$otpValidated) {
+                $logger->info('OTP requis pour transition sensible', [
+                    'dossier_id' => $equivalence->getId(),
+                    'transition' => $transition,
+                    'user' => $this->getUser()?->getUserIdentifier(),
+                ]);
+                $session->set('pending_transition_' . $equivalence->getId(), $transition);
+                return $this->redirectToRoute('equivalence_confirm_code', ['id' => $equivalence->getId()]);
+            }
+            $session->remove('otp_validated_' . $equivalence->getId());
+        }
+
+        if (!$workflow->can($equivalence, $transition)) {
+            $logger->warning('Transition refusée par workflow', [
                 'dossier_id' => $equivalence->getId(),
                 'transition' => $transition,
+                'status' => $equivalence->getStatus(),
                 'user' => $this->getUser()?->getUserIdentifier(),
             ]);
-            $session->set('pending_transition_' . $equivalence->getId(), $transition);
-            return $this->redirectToRoute('equivalence_confirm_code', ['id' => $equivalence->getId()]);
+            $this->addFlash('danger', sprintf("Transition '%s' non autorisée.", $transition));
+            return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
         }
-        $session->remove('otp_validated_' . $equivalence->getId());
-    }
 
-    if (!$workflow->can($equivalence, $transition)) {
-        $logger->warning('Transition refusée par workflow', [
-            'dossier_id' => $equivalence->getId(),
-            'transition' => $transition,
-            'status' => $equivalence->getStatus(),
-            'user' => $this->getUser()?->getUserIdentifier(),
-        ]);
-        $this->addFlash('danger', sprintf("Transition '%s' non autorisée.", $transition));
+        $oldStatus = $equivalence->getStatus();
+
+        try {
+            $workflow->apply($equivalence, $transition);
+            match ($transition) {
+                'approve' => $equivalence->setDecision(self::DECISION_ACCEPTED)->setClassement(self::CLASSEMENT_A2),
+                'reject'  => $equivalence->setDecision(self::DECISION_REJECTED),
+                default   => null,
+            };
+            $em->flush();
+            $logger->info('Transition appliquée', [
+                'dossier_id' => $equivalence->getId(),
+                'transition' => $transition,
+                'from' => $oldStatus,
+                'to' => $equivalence->getStatus(),
+                'user' => $this->getUser()?->getUserIdentifier(),
+            ]);
+            $this->addFlash('success', sprintf("Transition '%s' effectuée.", $transition));
+        } catch (\Throwable $e) {
+            $logger->error('Erreur transition workflow', [
+                'dossier_id' => $equivalence->getId(),
+                'transition' => $transition,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $this->addFlash('danger', 'Erreur technique lors de la transition.');
+        }
+
         return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
     }
 
-    $oldStatus = $equivalence->getStatus();
-
-    try {
-        $workflow->apply($equivalence, $transition);
-        match ($transition) {
-            'approve' => $equivalence->setDecision(self::DECISION_ACCEPTED)->setClassement(self::CLASSEMENT_A2),
-            'reject'  => $equivalence->setDecision(self::DECISION_REJECTED),
-            default   => null,
-        };
-        $em->flush();
-        $logger->info('Transition appliquée', [
-            'dossier_id' => $equivalence->getId(),
-            'transition' => $transition,
-            'from' => $oldStatus,
-            'to' => $equivalence->getStatus(),
-            'user' => $this->getUser()?->getUserIdentifier(),
-        ]);
-        $this->addFlash('success', sprintf("Transition '%s' effectuée.", $transition));
-    } catch (\Throwable $e) {
-        $logger->error('Erreur transition workflow', [
-            'dossier_id' => $equivalence->getId(),
-            'transition' => $transition,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        $this->addFlash('danger', 'Erreur technique lors de la transition.');
-    }
-
-    return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-}
-
-     #[Route('/{id}/pdf', name: 'equivalence_pdf', methods: ['GET'])]
+    #[Route('/{id}/pdf', name: 'equivalence_pdf', methods: ['GET'])]
     #[IsGranted(EquivalenceVoter::VIEW, subject: 'equivalence')]
     public function pdf(Equivalence $equivalence, PdfGenerator $generator): Response
     {
         return $generator->generateArrete($equivalence);
     }
 
-     // DELETE – protégé par Voter
+    // DELETE – protégé par Voter
     #[Route('/{id}/delete', name: 'equivalence_delete', methods: ['POST'])]
     #[IsGranted(EquivalenceVoter::DELETE, subject: 'equivalence')]
     public function delete(Request $request, Equivalence $equivalence, EntityManagerInterface $em, LoggerInterface $logger): Response
@@ -483,126 +489,126 @@ public function edit(
         }
     }
 
-#[Route('/confirm-code/{id}', name: 'equivalence_confirm_code', methods: ['GET', 'POST'])]
-public function confirmCode(
-    Equivalence $equivalence,
-    Request $request,
-    EntityManagerInterface $em,
-    CodeSender $codeSender,
-    LoggerInterface $logger,
-    #[Autowire(service: 'state_machine.equivalence_state_machine')]
-    WorkflowInterface $workflow
-): Response {
-    $this->denyAccessUnlessGranted('EDIT', $equivalence);
-    $session = $request->getSession();
+    #[Route('/confirm-code/{id}', name: 'equivalence_confirm_code', methods: ['GET', 'POST'])]
+    public function confirmCode(
+        Equivalence $equivalence,
+        Request $request,
+        EntityManagerInterface $em,
+        CodeSender $codeSender,
+        LoggerInterface $logger,
+        #[Autowire(service: 'state_machine.equivalence_state_machine')]
+        WorkflowInterface $workflow
+    ): Response {
+        $this->denyAccessUnlessGranted('EDIT', $equivalence);
+        $session = $request->getSession();
 
-    $pendingTransition = $session->get('pending_transition_' . $equivalence->getId());
-    if (!$pendingTransition || !in_array($pendingTransition, self::SENSITIVE_TRANSITIONS, true)) {
-        $this->addFlash('warning', 'Aucune action en attente.');
-        return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-    }
-
-    if (!$equivalence->getEmail()) {
-        $this->addFlash('danger', 'Aucune adresse email associée.');
-        return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-    }
-
-    // Envoi automatique OTP si nécessaire
-    $now = new \DateTimeImmutable();
-    $requestedAt = $equivalence->getCodeRequestedAt();
-    $hasCode = $equivalence->getConfirmationCode() !== null;
-    $isExpired = $requestedAt && ($now->getTimestamp() - $requestedAt->getTimestamp()) >= 900;
-    $codeValid = $hasCode && $requestedAt && !$isExpired;
-
-    if (!$codeValid) {
-        try {
-            $codeSender->sendCode($equivalence);
-            $this->addFlash('info', 'Un code de confirmation a été envoyé à votre adresse email.');
-        } catch (\Throwable $e) {
-            $this->addFlash('danger', 'Impossible d’envoyer le code.');
+        $pendingTransition = $session->get('pending_transition_' . $equivalence->getId());
+        if (!$pendingTransition || !in_array($pendingTransition, self::SENSITIVE_TRANSITIONS, true)) {
+            $this->addFlash('warning', 'Aucune action en attente.');
             return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
         }
-    } elseif ($hasCode && !$isExpired) {
-        $this->addFlash('info', 'Un code a déjà été envoyé. Saisissez-le ci-dessous.');
-    }
 
-    // Formulaire OTP
-    $form = $this->createForm(ConfirmationCodeType::class);
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        $submittedCode = $form->get('code')->getData();
-        $storedCode = $equivalence->getConfirmationCode();
-        $requestedAt = $equivalence->getCodeRequestedAt();
-        $isExpired = !$requestedAt || ($now->getTimestamp() - $requestedAt->getTimestamp()) > 900;
-
-        if ($storedCode && !$isExpired && hash_equals($storedCode, $submittedCode)) {
-            // Code valide - exécuter la transition immédiatement
-            $equivalence->setConfirmationCode(null);
-            $equivalence->setCodeRequestedAt(null);
-
-            try {
-                $workflow->apply($equivalence, $pendingTransition);
-
-                if ($pendingTransition === 'approve') {
-                    $equivalence->setDecision(self::DECISION_ACCEPTED)->setClassement(self::CLASSEMENT_A2);
-                } elseif ($pendingTransition === 'reject') {
-                    $equivalence->setDecision(self::DECISION_REJECTED);
-                }
-
-                $em->flush();
-
-                $logger->info('Transition exécutée après OTP', [
-                    'dossier_id' => $equivalence->getId(),
-                    'transition' => $pendingTransition,
-                ]);
-
-                $session->remove('pending_transition_' . $equivalence->getId());
-                $this->addFlash('success', "Transition '$pendingTransition' effectuée.");
-                return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-            } catch (\Throwable $e) {
-                $logger->error('Erreur transition après OTP', ['error' => $e->getMessage()]);
-                $this->addFlash('danger', 'Erreur technique lors de la transition.');
-                return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
-            }
+        if (!$equivalence->getEmail()) {
+            $this->addFlash('danger', 'Aucune adresse email associée.');
+            return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
         }
 
-        $this->addFlash('danger', $isExpired ? 'Code expiré.' : 'Code incorrect.');
+        // Envoi automatique OTP si nécessaire
+        $now = new \DateTimeImmutable();
+        $requestedAt = $equivalence->getCodeRequestedAt();
+        $hasCode = $equivalence->getConfirmationCode() !== null;
+        $isExpired = $requestedAt && ($now->getTimestamp() - $requestedAt->getTimestamp()) >= 900;
+        $codeValid = $hasCode && $requestedAt && !$isExpired;
+
+        if (!$codeValid) {
+            try {
+                $codeSender->sendCode($equivalence);
+                $this->addFlash('info', 'Un code de confirmation a été envoyé à votre adresse email.');
+            } catch (\Throwable $e) {
+                $this->addFlash('danger', 'Impossible d’envoyer le code.');
+                return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+            }
+        } elseif ($hasCode && !$isExpired) {
+            $this->addFlash('info', 'Un code a déjà été envoyé. Saisissez-le ci-dessous.');
+        }
+
+        // Formulaire OTP
+        $form = $this->createForm(ConfirmationCodeType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $submittedCode = $form->get('code')->getData();
+            $storedCode = $equivalence->getConfirmationCode();
+            $requestedAt = $equivalence->getCodeRequestedAt();
+            $isExpired = !$requestedAt || ($now->getTimestamp() - $requestedAt->getTimestamp()) > 900;
+
+            if ($storedCode && !$isExpired && hash_equals($storedCode, $submittedCode)) {
+                // Code valide - exécuter la transition immédiatement
+                $equivalence->setConfirmationCode(null);
+                $equivalence->setCodeRequestedAt(null);
+
+                try {
+                    $workflow->apply($equivalence, $pendingTransition);
+
+                    if ($pendingTransition === 'approve') {
+                        $equivalence->setDecision(self::DECISION_ACCEPTED)->setClassement(self::CLASSEMENT_A2);
+                    } elseif ($pendingTransition === 'reject') {
+                        $equivalence->setDecision(self::DECISION_REJECTED);
+                    }
+
+                    $em->flush();
+
+                    $logger->info('Transition exécutée après OTP', [
+                        'dossier_id' => $equivalence->getId(),
+                        'transition' => $pendingTransition,
+                    ]);
+
+                    $session->remove('pending_transition_' . $equivalence->getId());
+                    $this->addFlash('success', "Transition '$pendingTransition' effectuée.");
+                    return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+                } catch (\Throwable $e) {
+                    $logger->error('Erreur transition après OTP', ['error' => $e->getMessage()]);
+                    $this->addFlash('danger', 'Erreur technique lors de la transition.');
+                    return $this->redirectToRoute('equivalence_show', ['id' => $equivalence->getId()]);
+                }
+            }
+
+            $this->addFlash('danger', $isExpired ? 'Code expiré.' : 'Code incorrect.');
+        }
+
+        return $this->render('equivalence/confirm_code.html.twig', [
+            'form' => $form->createView(),
+            'equivalence' => $equivalence,
+            'transition' => $pendingTransition,
+        ]);
     }
 
-    return $this->render('equivalence/confirm_code.html.twig', [
-        'form' => $form->createView(),
-        'equivalence' => $equivalence,
-        'transition' => $pendingTransition,
-    ]);
-}
+    #[Route('/test-mail', name: 'test_mail')]
+    public function testMail(MailerInterface $mailer): Response
+    {
+        $to = 'antara.tombohasina@gmail.com'; // Remplacez par votre adresse de test
+        $subject = 'Test d’envoi d’email depuis Symfony';
+        $html = '<h1>Test réussi</h1><p>Votre configuration mailer fonctionne correctement.</p>';
 
-#[Route('/test-mail', name: 'test_mail')]
-public function testMail(MailerInterface $mailer): Response
-{
-    $to = 'antara.tombohasina@gmail.com'; // Remplacez par votre adresse de test
-    $subject = 'Test d’envoi d’email depuis Symfony';
-    $html = '<h1>Test réussi</h1><p>Votre configuration mailer fonctionne correctement.</p>';
+        $email = (new Email())
+            ->from('system.info.return.28@gmail.com')
+            ->to($to)
+            ->subject($subject)
+            ->html($html);
 
-    $email = (new Email())
-        ->from('system.info.return.28@gmail.com')
-        ->to($to)
-        ->subject($subject)
-        ->html($html);
+        try {
+            $mailer->send($email);
+            $this->addFlash('success', 'Email envoyé avec succès à ' . $to);
+        } catch (\Throwable $e) {
+            $this->addFlash('danger', 'Erreur lors de l’envoi : ' . $e->getMessage());
+        }
 
-    try {
-        $mailer->send($email);
-        $this->addFlash('success', 'Email envoyé avec succès à ' . $to);
-    } catch (\Throwable $e) {
-        $this->addFlash('danger', 'Erreur lors de l’envoi : ' . $e->getMessage());
+        return $this->redirectToRoute('equivalence_index');
     }
-
-    return $this->redirectToRoute('equivalence_index');
-}
-#[Route('/force-otp/{id}', name: 'force_otp')]
-public function forceOtp(Equivalence $equivalence, CodeSender $codeSender): Response
-{
-    $codeSender->sendCode($equivalence);
-    return new Response('Code envoyé à ' . $equivalence->getEmail());
-}
+    #[Route('/force-otp/{id}', name: 'force_otp')]
+    public function forceOtp(Equivalence $equivalence, CodeSender $codeSender): Response
+    {
+        $codeSender->sendCode($equivalence);
+        return new Response('Code envoyé à ' . $equivalence->getEmail());
+    }
 }

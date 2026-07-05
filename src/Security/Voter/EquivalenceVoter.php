@@ -1,4 +1,5 @@
 <?php
+// src/Security/Voter/EquivalenceVoter.php
 
 namespace App\Security\Voter;
 
@@ -9,43 +10,35 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 class EquivalenceVoter extends Voter
 {
-    public const VIEW = 'VIEW';
-    public const EDIT = 'EDIT';
-    public const DELETE = 'DELETE';
+    public const VIEW = 'EQUIVALENCE_VIEW';
+    public const EDIT = 'EQUIVALENCE_EDIT';
 
-    protected function supports(string $attribute, $subject): bool
+    protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::VIEW, self::EDIT, self::DELETE]) && $subject instanceof Equivalence;
+        return in_array($attribute, [self::VIEW, self::EDIT])
+            && $subject instanceof Equivalence;
     }
 
-    protected function voteOnAttribute(string $attribute, $subject, TokenInterface $token): bool
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
-        if (!$user instanceof User) return false;
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        // Admin, agent, commission can see/edit everything
+        if (
+            in_array('ROLE_AGENT', $user->getRoles())
+            || in_array('ROLE_COMMISSION', $user->getRoles())
+            || in_array('ROLE_ADMIN', $user->getRoles())
+        ) {
+            return true;
+        }
 
         /** @var Equivalence $equivalence */
         $equivalence = $subject;
 
-        // ADMIN, AGENT, COMMISSION -> tous droits
-        if (in_array('ROLE_ADMIN', $user->getRoles()) ||
-            in_array('ROLE_AGENT', $user->getRoles()) ||
-            in_array('ROLE_COMMISSION', $user->getRoles())) {
-            return true;
-        }
-
-        // CANDIDAT
-        if (in_array('ROLE_CANDIDAT', $user->getRoles())) {
-            $isOwner = $equivalence->getUser() && $equivalence->getUser()->getId() === $user->getId();
-            if (!$isOwner) return false;
-
-            return match ($attribute) {
-                self::VIEW => true,
-                self::EDIT => in_array($equivalence->getStatus(), ['draft', 'submitted']),
-                self::DELETE => false,
-                default => false,
-            };
-        }
-
-        return false;
+        // Candidat can only view/edit their own dossier
+        return $equivalence->getUser() === $user;
     }
 }
