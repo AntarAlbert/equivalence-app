@@ -22,7 +22,7 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
         $faker = Factory::create('fr_FR');
         $etabs = $manager->getRepository(\App\Entity\Etablissement::class)->findAll();
 
-        $roles = ['ROLE_CANDIDAT', 'ROLE_AGENT', 'ROLE_COMMISSION', 'ROLE_ADMIN'];
+        $roles = ['ROLE_CANDIDAT', 'ROLE_AGENT', 'ROLE_COMMISSION', 'ROLE_ADMIN', ' '];
 
         for ($i = 0; $i < 15; $i++) {
             $user = new User();
