@@ -12,7 +12,7 @@ document.addEventListener('submit', function (event) {
 // The `framework.csrf_protection.check_header` config option needs to be enabled for the header to be checked
 document.addEventListener('turbo:submit-start', function (event) {
     const h = generateCsrfHeaders(event.detail.formSubmission.formElement);
-    Object.keys(h).map(function (k) {
+    Object.keys(h).forEach(function (k) {
         event.detail.formSubmission.fetchRequest.headers[k] = h[k];
     });
 });
@@ -32,9 +32,9 @@ export function generateCsrfToken (formElement) {
     let csrfCookie = csrfField.getAttribute('data-csrf-protection-cookie-value');
     let csrfToken = csrfField.value;
 
-    if (!csrfCookie && nameCheck.test(csrfToken)) {
+    if (!csrfCookie && tokenCheck.test(csrfToken)) {
         csrfField.setAttribute('data-csrf-protection-cookie-value', csrfCookie = csrfToken);
-        csrfField.defaultValue = csrfToken = btoa(String.fromCharCode.apply(null, (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(18))));
+        csrfField.defaultValue = csrfToken = btoa(String.fromCharCode(...new Uint8Array((window.crypto || window.msCrypto).getRandomValues(new Uint8Array(18)))));
     }
     csrfField.dispatchEvent(new Event('change', { bubbles: true }));
 
